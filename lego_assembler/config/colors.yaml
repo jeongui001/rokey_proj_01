@@ -1,0 +1,34 @@
+# 블록 색상별 HSV 범위 (추후 실제 보정값으로 교체)
+colors:
+  red:
+    lower: [0, 120, 70]
+    upper: [10, 255, 255]
+    hex: "#e3000b"
+  blue:
+    lower: [100, 150, 50]
+    upper: [130, 255, 255]
+    hex: "#006cb7"
+  yellow:
+    lower: [20, 100, 100]
+    upper: [35, 255, 255]
+    hex: "#ffcd00"
+  green:
+    lower: [40, 70, 50]
+    upper: [80, 255, 255]
+    hex: "#00a650"
+  white:
+    lower: [0, 0, 200]
+    upper: [180, 30, 255]
+    hex: "#ffffff"
+  black:
+    lower: [0, 0, 0]
+    upper: [180, 255, 50]
+    hex: "#1a1a1a"
+  orange:
+    lower: [10, 150, 100]
+    upper: [20, 255, 255]
+    hex: "#f47920"
+  gray:
+    lower: [0, 0, 100]
+    upper: [180, 30, 200]
+    hex: "#9e9e9e"

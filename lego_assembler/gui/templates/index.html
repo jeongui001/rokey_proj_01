@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>레고 블록 자동 조립 시스템</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     섹션 A: 시작 설정
+══════════════════════════════════════════════════════════════ -->
+<section id="section-a" class="section">
+
+  <div class="section-header">
+    <h2 class="section-title">시작 설정</h2>
+  </div>
+
+  <div class="sec-a-body">
+
+    <!-- 좌: 이미지 업로드 -->
+    <div class="upload-col">
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept="image/*" hidden />
+        <div class="upload-idle" id="upload-idle">
+          <div class="upload-icon">⬆</div>
+          <p class="upload-hint">이미지를 끌어다 놓거나<br>클릭하여 업로드</p>
+          <p class="upload-sub">PNG · JPG · GIF</p>
+        </div>
+        <img class="upload-preview" id="upload-preview" alt="미리보기" />
+      </div>
+      <div class="upload-filename" id="upload-filename"></div>
+    </div>
+
+    <!-- 우: 설정 -->
+    <div class="settings-col">
+
+      <!-- 격자 크기 -->
+      <div class="setting-block">
+        <label class="setting-label">격자 크기</label>
+        <div class="slider-row">
+          <span class="slider-tick">8</span>
+          <input type="range" id="grid-slider" class="grid-slider"
+                 min="8" max="32" step="8" value="16" />
+          <span class="slider-tick">32</span>
+          <span class="grid-badge" id="grid-badge">16 × 16</span>
+        </div>
+        <div class="setting-sub" id="grid-sub">총 256칸</div>
+      </div>
+
+      <!-- 보유 블록 색상 -->
+      <div class="setting-block">
+        <label class="setting-label">보유 블록 색상</label>
+        <div class="owned-palette" id="owned-palette"></div>
+        <div class="setting-sub" id="owned-hint">8 / 8 색상 보유</div>
+      </div>
+
+      <!-- 웹캠 -->
+      <div class="setting-block">
+        <label class="setting-label">웹캠</label>
+        <div class="cam-row">
+          <div class="cam-badge" id="cam-badge">
+            <span class="cam-dot" id="cam-dot"></span>
+            <span id="cam-text">미연결</span>
+          </div>
+          <select class="cam-select" id="cam-select">
+            <option value="0">카메라 0 (/dev/video0)</option>
+            <option value="1">카메라 1 (/dev/video1)</option>
+            <option value="2">카메라 2 (USB Webcam)</option>
+          </select>
+          <button class="btn btn-sm btn-cam" id="btn-cam-test">연결 테스트</button>
+        </div>
+      </div>
+
+      <!-- 예상 필요 블록 -->
+      <div class="setting-block total-block">
+        <label class="setting-label">예상 필요 블록</label>
+        <div class="total-num-row">
+          <span class="total-num" id="total-num">256</span>
+          <span class="total-unit">개</span>
+        </div>
+      </div>
+
+    </div><!-- /settings-col -->
+  </div><!-- /sec-a-body -->
+
+  <div class="sec-a-footer">
+    <button class="btn btn-analyze" id="btn-analyze" disabled>분석 시작 →</button>
+    <span class="analyze-hint" id="analyze-hint">이미지를 먼저 업로드하세요</span>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     섹션 B: 설계도 미리보기 (분석 전 숨김)
+══════════════════════════════════════════════════════════════ -->
+<section id="section-b" class="section" style="display:none">
+
+  <div class="section-header">
+    <h2 class="section-title">설계도 미리보기</h2>
+    <span class="section-sub-badge" id="b-grid-info">16 × 16 격자</span>
+  </div>
+
+  <div class="sec-b-body">
+
+    <!-- 원본 이미지 -->
+    <div class="b-col">
+      <div class="b-col-label">원본 이미지</div>
+      <div class="b-image-box" id="b-image-box">
+        <img id="b-original-img" alt="원본" />
+        <div class="b-no-image" id="b-no-image">이미지 없음</div>
+      </div>
+    </div>
+
+    <!-- 변환된 블록 격자 -->
+    <div class="b-col">
+      <div class="b-col-label">변환된 블록 격자</div>
+      <div class="b-canvas-box">
+        <canvas id="b-canvas" width="320" height="320"></canvas>
+      </div>
+    </div>
+
+    <!-- 색상별 필요 블록 테이블 -->
+    <div class="b-table-col">
+      <div class="b-col-label">색상별 필요 블록</div>
+      <div class="color-table" id="color-table"></div>
+      <div class="color-total" id="color-total"></div>
+    </div>
+
+  </div><!-- /sec-b-body -->
+
+  <div class="sec-b-footer">
+    <button class="btn btn-assemble" id="btn-assemble">조립 시작 →</button>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     섹션 C: 실시간 진행
+══════════════════════════════════════════════════════════════ -->
+<section id="section-c" class="section">
+
+  <div class="section-header">
+    <h2 class="section-title">실시간 진행</h2>
+    <div class="status-badge" id="status-badge">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">IDLE — 대기 중</span>
+    </div>
+  </div>
+
+  <!-- 진행률 바 -->
+  <div class="progress-row">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-meta">
+      <span id="progress-label">0 / 256</span>
+      <span class="progress-sep">·</span>
+      <span id="progress-pct">0%</span>
+    </div>
+  </div>
+
+  <!-- 컨트롤 -->
+  <div class="controls-row">
+    <button class="btn btn-demo" id="btn-demo">▶ 데모 시작</button>
+    <div class="ctrl-divider"></div>
+    <button class="btn btn-pause" id="btn-pause-resume" disabled>⏸ 일시정지</button>
+    <button class="btn btn-recal" id="btn-recalibrate" disabled>◎ 재캘리브레이션</button>
+    <button class="btn btn-fix"   id="btn-manual-fix"  disabled>✎ 수동 보정</button>
+  </div>
+
+  <!-- 3열 메인 -->
+  <div class="tri-grid">
+
+    <div class="panel" id="panel-webcam">
+      <div class="panel-header">
+        <span class="panel-title">웹캠 현재 상태</span>
+        <span class="badge-sim">SIM</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="webcam-canvas" width="320" height="320"></canvas>
+      </div>
+      <div class="webcam-footer" id="webcam-footer">조립 대기 중…</div>
+    </div>
+
+    <div class="panel" id="panel-compare">
+      <div class="panel-header">
+        <span class="panel-title">설계도 비교</span>
+      </div>
+      <div class="compare-wrap">
+        <div class="grid-block">
+          <div class="grid-label">목표</div>
+          <canvas id="target-canvas" width="192" height="192"></canvas>
+        </div>
+        <div class="compare-divider"></div>
+        <div class="grid-block">
+          <div class="grid-label">현재</div>
+          <canvas id="current-canvas" width="192" height="192"></canvas>
+        </div>
+      </div>
+      <div class="cur-pos-bar" id="cur-pos-bar">위치: —</div>
+    </div>
+
+    <div class="panel" id="panel-log">
+      <div class="panel-header">
+        <span class="panel-title">시스템 로그</span>
+        <button class="btn-log-clear" id="btn-log-clear">지우기</button>
+      </div>
+      <div class="log-stream" id="log-stream"></div>
+    </div>
+
+  </div>
+
+  <div class="next-bar" id="next-bar">
+    <span class="next-label">다음 블록</span>
+    <span class="next-pos"  id="next-pos">—</span>
+    <span class="next-sep">·</span>
+    <div  class="next-swatch" id="next-swatch"></div>
+    <span class="next-name"  id="next-name">—</span>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     섹션 D: 결과 요약 (done 이벤트 수신 후 자동 표시)
+══════════════════════════════════════════════════════════════ -->
+<section id="section-d" class="section sec-d" style="display:none">
+
+  <div class="section-header">
+    <h2 class="section-title">결과 요약</h2>
+    <span class="done-badge">✓ 조립 완료</span>
+  </div>
+
+  <!-- 통계 카드 3개 -->
+  <div class="result-cards">
+
+    <div class="result-card card-green">
+      <div class="card-icon">✓</div>
+      <div class="card-val" id="res-rate">—</div>
+      <div class="card-label">완료율</div>
+      <div class="card-sub" id="res-blocks">— / — 블록</div>
+    </div>
+
+    <div class="result-card card-red">
+      <div class="card-icon">⚠</div>
+      <div class="card-val" id="res-errors">—</div>
+      <div class="card-label">오류 횟수</div>
+      <div class="card-sub">수동 보정 포함</div>
+    </div>
+
+    <div class="result-card card-blue">
+      <div class="card-icon">⏱</div>
+      <div class="card-val" id="res-time">—</div>
+      <div class="card-label">소요 시간</div>
+      <div class="card-sub" id="res-time-sub">—</div>
+    </div>
+
+  </div><!-- /result-cards -->
+
+  <!-- 로그 다운로드 -->
+  <div class="result-actions">
+    <button class="btn btn-download" id="btn-download-log">⬇ 전체 로그 다운로드</button>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     오류 카드 오버레이
+══════════════════════════════════════════════════════════════ -->
+<div class="err-overlay" id="err-overlay">
+  <div class="err-card">
+    <div class="err-card-head">
+      <span class="err-icon">⚠</span>
+      <h3>블록 배치 오류 감지</h3>
+    </div>
+    <div class="err-card-body">
+      <p class="err-location" id="err-location"></p>
+      <div class="err-colors">
+        <div class="err-color-item">
+          <div class="color-swatch-lg" id="err-exp-sw"></div>
+          <span class="color-tag">목표</span>
+          <span class="color-nm" id="err-exp-nm"></span>
+        </div>
+        <div class="err-arrow">→</div>
+        <div class="err-color-item">
+          <div class="color-swatch-lg" id="err-det-sw"></div>
+          <span class="color-tag">감지됨</span>
+          <span class="color-nm" id="err-det-nm"></span>
+        </div>
+      </div>
+      <p class="err-msg" id="err-msg"></p>
+      <div class="err-fix">
+        <span class="err-fix-label">색상 직접 선택</span>
+        <div class="err-palette" id="err-palette"></div>
+      </div>
+    </div>
+    <div class="err-card-foot">
+      <button class="btn btn-dismiss" id="btn-dismiss">무시하고 계속</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/main.js"></script>
+</body>
+</html>
