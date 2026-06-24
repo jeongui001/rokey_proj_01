@@ -1,0 +1,6 @@
+string grid_json
+int32 grid_size
+---
+bool success
+string action_queue_json
+string error_message
