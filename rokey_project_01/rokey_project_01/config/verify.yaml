@@ -1,0 +1,26 @@
+/**:
+  ros__parameters:
+    image_topic: /front_camera/image_raw
+    camera_info_topic: /front_camera/camera_info
+    expected_model_topic: /vision/expected_model
+    observed_model_topic: /vision/observed_model
+    service_name: /vision/verify_assembly
+
+    rectified_topic: /vision/camera/rectified
+    rectified_camera_info_topic: /vision/camera/camera_info
+    live_overlay_topic: /vision/verify/live_overlay
+    workspace_topic: /vision/verify/workspace
+    segmentation_overlay_topic: /vision/verify/segmentation_overlay
+    live_segmentation_topic: /vision/verify/live_segmentation
+    verification_overlay_topic: /vision/verify/overlay
+    observed_mosaic_topic: /vision/verify/observed_mosaic
+
+    publish_rectified: true
+    publish_live_overlay: true
+    publish_live_segmentation: false
+
+    # Empty strings use the verifier role in vision.yaml.
+    segmentation_backend_override: ""
+    segmentation_model_path_override: ""
+    segmentation_device_override: ""
+    warmup_segmenter: false
