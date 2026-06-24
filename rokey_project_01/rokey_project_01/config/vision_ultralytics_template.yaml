@@ -1,0 +1,101 @@
+# Production template. Copy to your deployment config and replace both model paths.
+# The source-image model may be a generic object instance-segmentation model.
+# The verifier model should be trained on your physical blocks, preferably one
+# instance mask per block. It may use a generic "block" class or colour-specific
+# classes such as red_block / blue_block.
+
+palette:
+  confidence_scale: 45.0
+  entries:
+    - {name: red,    rgb: [220, 35, 35],   occupied: true}
+    - {name: blue,   rgb: [35, 80, 220],   occupied: true}
+    - {name: green,  rgb: [40, 180, 70],   occupied: true}
+    - {name: yellow, rgb: [235, 210, 45],  occupied: true}
+    - {name: white,  rgb: [225, 225, 225], occupied: true}
+    - {name: black,  rgb: [25, 25, 25],    occupied: true}
+    - {name: empty,  rgb: [95, 95, 95],    occupied: false}
+
+mosaic:
+  fit_mode: center_crop
+  default_output_width: 512
+  default_output_height: 512
+  max_grid_size: 32
+  draw_grid: true
+  grid_line_thickness: 1
+
+segmentation:
+  defaults:
+    confidence_threshold: 0.30
+    iou_threshold: 0.70
+    image_size: 640
+    mask_threshold: 0.50
+    min_mask_area_px: 100
+    max_instances: 200
+    device: auto
+    half: false
+    agnostic_nms: false
+    allowed_classes: []
+    allowed_class_ids: []
+
+  image_processor:
+    backend: ultralytics
+    model_path: /absolute/path/to/source_instance_seg.pt
+
+  verifier:
+    backend: ultralytics
+    model_path: /absolute/path/to/block_instance_seg.pt
+    min_mask_area_px: 180
+
+# Adjust class_to_palette to the exact class names in your trained model.
+grid_projection:
+  empty_palette_name: empty
+  color_source: class_then_pixels
+  class_to_palette:
+    red: red
+    red_block: red
+    blue: blue
+    blue_block: blue
+    green: green
+    green_block: green
+    yellow: yellow
+    yellow_block: yellow
+    white: white
+    white_block: white
+    black: black
+    black_block: black
+  min_instance_confidence: 0.25
+  min_cell_coverage: 0.10
+  conflict_cell_coverage: 0.08
+  coverage_saturation: 0.58
+  mask_erosion_px: 1
+  min_color_pixels: 12
+  contour_max_points: 64
+  overlay_alpha: 0.42
+  confidence_weights: {instance: 0.45, coverage: 0.35, color: 0.20}
+
+workspace:
+  base_frame: base_link
+  camera_frame: front_camera_optical_frame
+  rectify_image: true
+  roi_normalized:
+    - [0.20, 0.15]
+    - [0.80, 0.15]
+    - [0.80, 0.88]
+    - [0.20, 0.88]
+  fixed_axis_default: x
+  fixed_axis_value_default: 0.50
+  target_offset_xyz: [0.0, 0.0, 0.0]
+
+verification:
+  pass_threshold: 95.0
+  min_expected_confidence: 0.0
+  min_observation_confidence: 0.40
+  min_alignment_coverage: 0.16
+  max_centroid_offset_ratio: 0.95
+  max_overlapping_instances: 1
+  pixels_per_cell: 64
+  max_warp_size: 2048
+  frame_timeout_sec: 2.0
+  live_overlay_rate_hz: 10.0
+  live_segmentation_rate_hz: 1.0
+  preview_grid_size: 8

@@ -4,7 +4,7 @@
     camera_info_topic: /front_camera/camera_info
     expected_model_topic: /vision/expected_model
     observed_model_topic: /vision/observed_model
-    service_name: /vision/verify_assembly
+    service_name: /verify/assembly
 
     rectified_topic: /vision/camera/rectified
     rectified_camera_info_topic: /vision/camera/camera_info

@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     camera_info_topic: /front_camera/camera_info
-    service_name: /vision/process_mosaic
+    service_name: /image/analyze
     fitted_topic: /vision/source/fitted
     segmentation_overlay_topic: /vision/source/segmentation_overlay
     mosaic_topic: /vision/mosaic
