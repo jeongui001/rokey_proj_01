@@ -1,2 +1,0 @@
-# Optional production backend. Build does not require this package.
-ultralytics>=8.2.0
