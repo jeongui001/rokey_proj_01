@@ -27,11 +27,16 @@
   </div>
 </section>
 
-<!-- 2. 분석 결과 & 조립 시작 -->
+<!-- 2. 분석 결과 & 편집 & 조립 시작 -->
 <section id="section-result" class="hidden">
-  <h2>2. 분석 결과</h2>
+  <h2>2. 분석 결과 편집</h2>
+  <p class="hint">셀 클릭 → 색상 변경 / 우클릭 → 비우기</p>
+  <div id="color-palette"></div>
   <canvas id="grid-canvas" width="320" height="320"></canvas>
-  <button id="btn-start">조립 시작</button>
+  <div class="row">
+    <button id="btn-update">수정 반영</button>
+    <button id="btn-start">조립 시작</button>
+  </div>
 </section>
 
 <!-- 3. 진행 상황 -->

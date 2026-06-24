@@ -163,10 +163,10 @@ source install/setup.bash
 ## 실행
 
 ```bash
-# 전체 실행
+# 전체 실행 시
 ros2 launch cobot1 assembly.launch.py
 
-# 개별 노드 (image_processor는 vision_config_file 필수)
+# 개별 노드 실행 시(image_processor는 vision_config_file 필수)
 ros2 run cobot1 image_processor_node \
   --ros-args -p vision_config_file:=$(ros2 pkg prefix cobot1)/share/cobot1/config/vision.yaml
 ```

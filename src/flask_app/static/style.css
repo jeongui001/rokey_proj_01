@@ -40,7 +40,18 @@ select {
   margin: 10px 0;
   border-radius: 4px;
 }
-#grid-canvas { border: 1px solid #30363d; border-radius: 4px; }
+#grid-canvas { border: 1px solid #30363d; border-radius: 4px; cursor: crosshair; }
+.hint { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
+#color-palette { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.palette-btn {
+  width: 32px; height: 32px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.palette-btn.selected { border-color: #58a6ff; }
+.palette-btn:hover { border-color: #8b949e; }
 .status-text { font-weight: bold; margin-bottom: 8px; }
 .progress-bar {
   background: #21262d;
