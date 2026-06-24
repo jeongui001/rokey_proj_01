@@ -1,0 +1,2893 @@
+{
+  "model_id": "4484a4ab-be92-4cd1-8d73-de018f406814",
+  "segmentation_backend": "opencv_components",
+  "segmentation_model": "opencv_components",
+  "source_size": [
+    288,
+    288
+  ],
+  "grid_size": 8,
+  "output_size": [
+    512,
+    512
+  ],
+  "fixed_axis": "x",
+  "fixed_axis_value": 0.5,
+  "instances": [
+    {
+      "instance_id": 0,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.9847944974899292,
+      "bbox": [
+        45,
+        102,
+        201,
+        174
+      ],
+      "centroid": [
+        123.8050537109375,
+        171.1397705078125
+      ],
+      "mask_area": 11798,
+      "color": "white",
+      "color_confidence": 0.858479380607605
+    },
+    {
+      "instance_id": 1,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        36,
+        12,
+        219,
+        77
+      ],
+      "centroid": [
+        141.5062713623047,
+        62.91398239135742
+      ],
+      "mask_area": 6301,
+      "color": "white",
+      "color_confidence": 0.04826197773218155
+    },
+    {
+      "instance_id": 2,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        41,
+        100,
+        214,
+        177
+      ],
+      "centroid": [
+        178.2047119140625,
+        206.57545471191406
+      ],
+      "mask_area": 3903,
+      "color": "white",
+      "color_confidence": 0.20050550997257233
+    },
+    {
+      "instance_id": 3,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        25,
+        77,
+        241,
+        23
+      ],
+      "centroid": [
+        146.91847229003906,
+        92.71802520751953
+      ],
+      "mask_area": 2674,
+      "color": "blue",
+      "color_confidence": 0.0838673785328865
+    },
+    {
+      "instance_id": 4,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        57,
+        197,
+        64,
+        61
+      ],
+      "centroid": [
+        88.5245132446289,
+        225.3769073486328
+      ],
+      "mask_area": 1836,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 5,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        128,
+        179,
+        126,
+        13
+      ],
+      "centroid": [
+        190.64537048339844,
+        184.97557067871094
+      ],
+      "mask_area": 1596,
+      "color": "blue",
+      "color_confidence": 0.0838673785328865
+    },
+    {
+      "instance_id": 6,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        39,
+        215,
+        213,
+        70
+      ],
+      "centroid": [
+        156.55194091796875,
+        261.8692626953125
+      ],
+      "mask_area": 1415,
+      "color": "blue",
+      "color_confidence": 0.0838673785328865
+    },
+    {
+      "instance_id": 7,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        166,
+        228,
+        50,
+        48
+      ],
+      "centroid": [
+        189.9381561279297,
+        251.4077606201172
+      ],
+      "mask_area": 954,
+      "color": "white",
+      "color_confidence": 0.04826197773218155
+    },
+    {
+      "instance_id": 8,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        152,
+        275,
+        78,
+        9
+      ],
+      "centroid": [
+        190.34146118164062,
+        279.51544189453125
+      ],
+      "mask_area": 615,
+      "color": "black",
+      "color_confidence": 0.40187868475914
+    },
+    {
+      "instance_id": 9,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        44,
+        101,
+        203,
+        175
+      ],
+      "centroid": [
+        135.8076934814453,
+        149.0087432861328
+      ],
+      "mask_area": 572,
+      "color": "white",
+      "color_confidence": 0.8614521026611328
+    },
+    {
+      "instance_id": 10,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        65,
+        24,
+        25,
+        41
+      ],
+      "centroid": [
+        76.56690216064453,
+        44.346832275390625
+      ],
+      "mask_area": 568,
+      "color": "blue",
+      "color_confidence": 0.0838673785328865
+    },
+    {
+      "instance_id": 11,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        162,
+        222,
+        58,
+        52
+      ],
+      "centroid": [
+        190.5,
+        241.8129425048828
+      ],
+      "mask_area": 556,
+      "color": "white",
+      "color_confidence": 0.858479380607605
+    },
+    {
+      "instance_id": 12,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        39,
+        204,
+        213,
+        75
+      ],
+      "centroid": [
+        172.73731994628906,
+        235.84420776367188
+      ],
+      "mask_area": 552,
+      "color": "white",
+      "color_confidence": 0.21464592218399048
+    },
+    {
+      "instance_id": 13,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        120,
+        142,
+        51,
+        22
+      ],
+      "centroid": [
+        145.0,
+        150.0552520751953
+      ],
+      "mask_area": 543,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 14,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        57,
+        142,
+        51,
+        22
+      ],
+      "centroid": [
+        81.68772888183594,
+        149.93309020996094
+      ],
+      "mask_area": 538,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 15,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        183,
+        142,
+        51,
+        22
+      ],
+      "centroid": [
+        208.31227111816406,
+        149.93309020996094
+      ],
+      "mask_area": 538,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 16,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        149,
+        206,
+        84,
+        5
+      ],
+      "centroid": [
+        190.5,
+        208.0
+      ],
+      "mask_area": 416,
+      "color": "black",
+      "color_confidence": 0.11561022698879242
+    },
+    {
+      "instance_id": 17,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        58,
+        251,
+        62,
+        6
+      ],
+      "centroid": [
+        88.5,
+        253.59776306152344
+      ],
+      "mask_area": 358,
+      "color": "black",
+      "color_confidence": 0.11561022698879242
+    },
+    {
+      "instance_id": 18,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        62,
+        195,
+        42,
+        55
+      ],
+      "centroid": [
+        87.77586364746094,
+        219.82183837890625
+      ],
+      "mask_area": 348,
+      "color": "white",
+      "color_confidence": 0.7344436645507812
+    },
+    {
+      "instance_id": 19,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        62,
+        196,
+        41,
+        54
+      ],
+      "centroid": [
+        81.50287628173828,
+        220.6724090576172
+      ],
+      "mask_area": 348,
+      "color": "white",
+      "color_confidence": 0.06699012219905853
+    },
+    {
+      "instance_id": 20,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        27,
+        100,
+        124,
+        185
+      ],
+      "centroid": [
+        59.89677429199219,
+        221.35484313964844
+      ],
+      "mask_area": 310,
+      "color": "white",
+      "color_confidence": 0.9741666913032532
+    },
+    {
+      "instance_id": 21,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.4990393817424774,
+      "bbox": [
+        124,
+        34,
+        43,
+        44
+      ],
+      "centroid": [
+        144.955322265625,
+        55.89003372192383
+      ],
+      "mask_area": 291,
+      "color": "white",
+      "color_confidence": 0.7161775827407837
+    },
+    {
+      "instance_id": 22,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        57,
+        158,
+        50,
+        6
+      ],
+      "centroid": [
+        81.5848388671875,
+        160.64620971679688
+      ],
+      "mask_area": 277,
+      "color": "black",
+      "color_confidence": 0.11561022698879242
+    },
+    {
+      "instance_id": 23,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        184,
+        158,
+        50,
+        6
+      ],
+      "centroid": [
+        208.4151611328125,
+        160.64620971679688
+      ],
+      "mask_area": 277,
+      "color": "black",
+      "color_confidence": 0.11561022698879242
+    },
+    {
+      "instance_id": 24,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        121,
+        158,
+        49,
+        6
+      ],
+      "centroid": [
+        145.0,
+        160.63636779785156
+      ],
+      "mask_area": 275,
+      "color": "black",
+      "color_confidence": 0.11561022698879242
+    },
+    {
+      "instance_id": 25,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        63,
+        120,
+        16,
+        17
+      ],
+      "centroid": [
+        70.52787780761719,
+        127.97026062011719
+      ],
+      "mask_area": 269,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 26,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        85,
+        120,
+        16,
+        17
+      ],
+      "centroid": [
+        92.47212219238281,
+        127.97026062011719
+      ],
+      "mask_area": 269,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 27,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        127,
+        120,
+        16,
+        17
+      ],
+      "centroid": [
+        134.4721221923828,
+        127.97026062011719
+      ],
+      "mask_area": 269,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 28,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        148,
+        120,
+        16,
+        17
+      ],
+      "centroid": [
+        155.5278778076172,
+        127.97026062011719
+      ],
+      "mask_area": 269,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 29,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        190,
+        120,
+        16,
+        17
+      ],
+      "centroid": [
+        197.5278778076172,
+        127.97026062011719
+      ],
+      "mask_area": 269,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 30,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        212,
+        120,
+        16,
+        17
+      ],
+      "centroid": [
+        219.4721221923828,
+        127.97026062011719
+      ],
+      "mask_area": 269,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 31,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        28,
+        99,
+        235,
+        2
+      ],
+      "centroid": [
+        145.0,
+        99.01702117919922
+      ],
+      "mask_area": 235,
+      "color": "blue",
+      "color_confidence": 0.08157984912395477
+    },
+    {
+      "instance_id": 32,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.6269845366477966,
+      "bbox": [
+        141,
+        221,
+        12,
+        49
+      ],
+      "centroid": [
+        146.5,
+        245.0
+      ],
+      "mask_area": 228,
+      "color": "white",
+      "color_confidence": 0.6976763010025024
+    },
+    {
+      "instance_id": 33,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.6206948161125183,
+      "bbox": [
+        229,
+        221,
+        12,
+        49
+      ],
+      "centroid": [
+        234.4801788330078,
+        245.10572814941406
+      ],
+      "mask_area": 227,
+      "color": "white",
+      "color_confidence": 0.6976763010025024
+    },
+    {
+      "instance_id": 34,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        167,
+        226,
+        48,
+        49
+      ],
+      "centroid": [
+        190.4822998046875,
+        246.03982543945312
+      ],
+      "mask_area": 226,
+      "color": "white",
+      "color_confidence": 0.06938058137893677
+    },
+    {
+      "instance_id": 35,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        60,
+        118,
+        43,
+        39
+      ],
+      "centroid": [
+        78.80995178222656,
+        134.4932098388672
+      ],
+      "mask_area": 221,
+      "color": "white",
+      "color_confidence": 0.9055079221725464
+    },
+    {
+      "instance_id": 36,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        188,
+        118,
+        43,
+        39
+      ],
+      "centroid": [
+        211.19004821777344,
+        134.4932098388672
+      ],
+      "mask_area": 221,
+      "color": "white",
+      "color_confidence": 0.9055079221725464
+    },
+    {
+      "instance_id": 37,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.4705270230770111,
+      "bbox": [
+        58,
+        192,
+        5,
+        57
+      ],
+      "centroid": [
+        59.49308776855469,
+        221.07833862304688
+      ],
+      "mask_area": 217,
+      "color": "white",
+      "color_confidence": 0.7520606517791748
+    },
+    {
+      "instance_id": 38,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        148,
+        205,
+        86,
+        7
+      ],
+      "centroid": [
+        190.5,
+        208.03334045410156
+      ],
+      "mask_area": 180,
+      "color": "blue",
+      "color_confidence": 0.07214078307151794
+    },
+    {
+      "instance_id": 39,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        125,
+        119,
+        41,
+        38
+      ],
+      "centroid": [
+        145.0,
+        137.9122772216797
+      ],
+      "mask_area": 171,
+      "color": "white",
+      "color_confidence": 0.6976763010025024
+    },
+    {
+      "instance_id": 40,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        66,
+        24,
+        25,
+        7
+      ],
+      "centroid": [
+        78.0,
+        26.929824829101562
+      ],
+      "mask_area": 171,
+      "color": "black",
+      "color_confidence": 0.11561022698879242
+    },
+    {
+      "instance_id": 41,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.38855254650115967,
+      "bbox": [
+        115,
+        192,
+        5,
+        57
+      ],
+      "centroid": [
+        117.9760513305664,
+        220.65269470214844
+      ],
+      "mask_area": 167,
+      "color": "white",
+      "color_confidence": 0.7158239483833313
+    },
+    {
+      "instance_id": 42,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        133,
+        193,
+        3,
+        83
+      ],
+      "centroid": [
+        134.48484802246094,
+        233.7515106201172
+      ],
+      "mask_area": 165,
+      "color": "white",
+      "color_confidence": 0.8614521026611328
+    },
+    {
+      "instance_id": 43,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        145,
+        225,
+        4,
+        41
+      ],
+      "centroid": [
+        146.5,
+        245.24691772460938
+      ],
+      "mask_area": 162,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 44,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        148,
+        39,
+        15,
+        15
+      ],
+      "centroid": [
+        153.5962677001953,
+        47.40372848510742
+      ],
+      "mask_area": 161,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 45,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        128,
+        59,
+        15,
+        15
+      ],
+      "centroid": [
+        136.4037322998047,
+        64.59627532958984
+      ],
+      "mask_area": 161,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 46,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        148,
+        59,
+        15,
+        15
+      ],
+      "centroid": [
+        153.5962677001953,
+        64.59627532958984
+      ],
+      "mask_area": 161,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 47,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        233,
+        225,
+        4,
+        41
+      ],
+      "centroid": [
+        234.4906768798828,
+        245.1242218017578
+      ],
+      "mask_area": 161,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 48,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        128,
+        39,
+        15,
+        15
+      ],
+      "centroid": [
+        136.4562530517578,
+        47.368751525878906
+      ],
+      "mask_area": 160,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 49,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.4884883463382721,
+      "bbox": [
+        153,
+        286,
+        76,
+        2
+      ],
+      "centroid": [
+        190.5,
+        286.49334716796875
+      ],
+      "mask_area": 150,
+      "color": "white",
+      "color_confidence": 0.6976763010025024
+    },
+    {
+      "instance_id": 50,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        162,
+        225,
+        58,
+        50
+      ],
+      "centroid": [
+        190.6690673828125,
+        246.46762084960938
+      ],
+      "mask_area": 139,
+      "color": "white",
+      "color_confidence": 0.858479380607605
+    },
+    {
+      "instance_id": 51,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        127,
+        179,
+        123,
+        15
+      ],
+      "centroid": [
+        183.64962768554688,
+        191.08758544921875
+      ],
+      "mask_area": 137,
+      "color": "white",
+      "color_confidence": 0.09103210270404816
+    },
+    {
+      "instance_id": 52,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.489847868680954,
+      "bbox": [
+        103,
+        117,
+        4,
+        40
+      ],
+      "centroid": [
+        104.57894897460938,
+        137.2330780029297
+      ],
+      "mask_area": 133,
+      "color": "white",
+      "color_confidence": 0.7693400382995605
+    },
+    {
+      "instance_id": 53,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.489847868680954,
+      "bbox": [
+        184,
+        117,
+        4,
+        40
+      ],
+      "centroid": [
+        185.42105102539062,
+        137.2330780029297
+      ],
+      "mask_area": 133,
+      "color": "white",
+      "color_confidence": 0.7693400382995605
+    },
+    {
+      "instance_id": 54,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        122,
+        33,
+        47,
+        46
+      ],
+      "centroid": [
+        145.0,
+        53.914730072021484
+      ],
+      "mask_area": 129,
+      "color": "white",
+      "color_confidence": 0.05199834331870079
+    },
+    {
+      "instance_id": 55,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.46998438239097595,
+      "bbox": [
+        57,
+        118,
+        4,
+        39
+      ],
+      "centroid": [
+        58.421875,
+        137.1484375
+      ],
+      "mask_area": 128,
+      "color": "white",
+      "color_confidence": 0.8167116641998291
+    },
+    {
+      "instance_id": 56,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.4699842631816864,
+      "bbox": [
+        230,
+        118,
+        4,
+        39
+      ],
+      "centroid": [
+        231.578125,
+        137.1484375
+      ],
+      "mask_area": 128,
+      "color": "white",
+      "color_confidence": 0.8167116641998291
+    },
+    {
+      "instance_id": 57,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        140,
+        220,
+        14,
+        51
+      ],
+      "centroid": [
+        146.45599365234375,
+        244.80799865722656
+      ],
+      "mask_area": 125,
+      "color": "white",
+      "color_confidence": 0.7446694374084473
+    },
+    {
+      "instance_id": 58,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        228,
+        220,
+        14,
+        51
+      ],
+      "centroid": [
+        234.54400634765625,
+        244.80799865722656
+      ],
+      "mask_area": 125,
+      "color": "white",
+      "color_confidence": 0.6877561211585999
+    },
+    {
+      "instance_id": 59,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        192,
+        234,
+        20,
+        38
+      ],
+      "centroid": [
+        200.611572265625,
+        252.47933959960938
+      ],
+      "mask_area": 121,
+      "color": "white",
+      "color_confidence": 0.06120171770453453
+    },
+    {
+      "instance_id": 60,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.3749777376651764,
+      "bbox": [
+        121,
+        115,
+        5,
+        42
+      ],
+      "centroid": [
+        122.0854721069336,
+        136.4700927734375
+      ],
+      "mask_area": 117,
+      "color": "white",
+      "color_confidence": 0.7161775827407837
+    },
+    {
+      "instance_id": 61,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 0.3749777376651764,
+      "bbox": [
+        165,
+        115,
+        5,
+        42
+      ],
+      "centroid": [
+        167.91453552246094,
+        136.4700927734375
+      ],
+      "mask_area": 117,
+      "color": "white",
+      "color_confidence": 0.7161775827407837
+    },
+    {
+      "instance_id": 62,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        229,
+        192,
+        25,
+        94
+      ],
+      "centroid": [
+        247.47413635253906,
+        247.0603485107422
+      ],
+      "mask_area": 116,
+      "color": "white",
+      "color_confidence": 0.9775400161743164
+    },
+    {
+      "instance_id": 63,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        104,
+        196,
+        12,
+        54
+      ],
+      "centroid": [
+        109.4521713256836,
+        220.42608642578125
+      ],
+      "mask_area": 115,
+      "color": "white",
+      "color_confidence": 0.10147920250892639
+    },
+    {
+      "instance_id": 64,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        39,
+        282,
+        113,
+        2
+      ],
+      "centroid": [
+        95.0,
+        282.99114990234375
+      ],
+      "mask_area": 113,
+      "color": "blue",
+      "color_confidence": 0.07974756509065628
+    },
+    {
+      "instance_id": 65,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        72,
+        197,
+        6,
+        54
+      ],
+      "centroid": [
+        74.5,
+        223.5
+      ],
+      "mask_area": 108,
+      "color": "blue",
+      "color_confidence": 0.04835741966962814
+    },
+    {
+      "instance_id": 66,
+      "class_id": 0,
+      "class_name": "object",
+      "confidence": 1.0,
+      "bbox": [
+        86,
+        197,
+        6,
+        54
+      ],
+      "centroid": [
+        88.5,
+        223.5
+      ],
+      "mask_area": 108,
+      "color": "blue",
+      "color_confidence": 0.05364149436354637
+    }
+  ],
+  "cells": [
+    {
+      "index": 0,
+      "row": 0,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        17.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 1,
+      "row": 0,
+      "col": 1,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 0.6913580298423767,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.03086419776082039,
+      "source_uv": [
+        53.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 2,
+      "row": 0,
+      "col": 2,
+      "color": "black",
+      "occupied": true,
+      "confidence": 0.5341187715530396,
+      "instance_id": 40,
+      "class_name": "object",
+      "mask_coverage": 0.10108024626970291,
+      "source_uv": [
+        89.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 3,
+      "row": 0,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.6277425289154053,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.2785493731498718,
+      "source_uv": [
+        125.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 4,
+      "row": 0,
+      "col": 4,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.6561455726623535,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.3256172835826874,
+      "source_uv": [
+        161.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 5,
+      "row": 0,
+      "col": 5,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        197.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 6,
+      "row": 0,
+      "col": 6,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        233.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 7,
+      "row": 0,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        269.5,
+        17.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 8,
+      "row": 1,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        17.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 9,
+      "row": 1,
+      "col": 1,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 0.1280864179134369,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.08719135820865631,
+      "source_uv": [
+        53.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 10,
+      "row": 1,
+      "col": 2,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8096523880958557,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.5964506268501282,
+      "source_uv": [
+        89.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 11,
+      "row": 1,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.7348359823226929,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.45601850748062134,
+      "source_uv": [
+        125.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 12,
+      "row": 1,
+      "col": 4,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.6854798793792725,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.3742283880710602,
+      "source_uv": [
+        161.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 13,
+      "row": 1,
+      "col": 5,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8096523880958557,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.6435185074806213,
+      "source_uv": [
+        197.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 14,
+      "row": 1,
+      "col": 6,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 0.42129629850387573,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.05787036940455437,
+      "source_uv": [
+        233.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 15,
+      "row": 1,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        269.5,
+        53.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 16,
+      "row": 2,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 0.25925925374031067,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.07407407462596893,
+      "source_uv": [
+        17.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 17,
+      "row": 2,
+      "col": 1,
+      "color": "blue",
+      "occupied": true,
+      "confidence": 0.6506948471069336,
+      "instance_id": 3,
+      "class_name": "object",
+      "mask_coverage": 0.3047839403152466,
+      "source_uv": [
+        53.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 18,
+      "row": 2,
+      "col": 2,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.7278516292572021,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.4444444477558136,
+      "source_uv": [
+        89.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 19,
+      "row": 2,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.6850142478942871,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.37345677614212036,
+      "source_uv": [
+        125.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 20,
+      "row": 2,
+      "col": 4,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.673839271068573,
+      "instance_id": 1,
+      "class_name": "object",
+      "mask_coverage": 0.354938268661499,
+      "source_uv": [
+        161.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 21,
+      "row": 2,
+      "col": 5,
+      "color": "blue",
+      "occupied": true,
+      "confidence": 0.6744416356086731,
+      "instance_id": 3,
+      "class_name": "object",
+      "mask_coverage": 0.3441357910633087,
+      "source_uv": [
+        197.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 22,
+      "row": 2,
+      "col": 6,
+      "color": "blue",
+      "occupied": true,
+      "confidence": 0.6637322902679443,
+      "instance_id": 3,
+      "class_name": "object",
+      "mask_coverage": 0.3263888955116272,
+      "source_uv": [
+        233.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 23,
+      "row": 2,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 0.02777777798473835,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0972222238779068,
+      "source_uv": [
+        269.5,
+        89.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 24,
+      "row": 3,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        17.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 25,
+      "row": 3,
+      "col": 1,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8662902116775513,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.4166666567325592,
+      "source_uv": [
+        53.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 26,
+      "row": 3,
+      "col": 2,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.7466248869895935,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.2183641940355301,
+      "source_uv": [
+        89.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 27,
+      "row": 3,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.9081963300704956,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.4861111044883728,
+      "source_uv": [
+        125.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 28,
+      "row": 3,
+      "col": 4,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8676870465278625,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.41898149251937866,
+      "source_uv": [
+        161.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 29,
+      "row": 3,
+      "col": 5,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.7871341705322266,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.2854938209056854,
+      "source_uv": [
+        197.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 30,
+      "row": 3,
+      "col": 6,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8760682940483093,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.43287035822868347,
+      "source_uv": [
+        233.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 31,
+      "row": 3,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        269.5,
+        125.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 32,
+      "row": 4,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        17.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 33,
+      "row": 4,
+      "col": 1,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.9067994356155396,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.48379629850387573,
+      "source_uv": [
+        53.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 34,
+      "row": 4,
+      "col": 2,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8565120697021484,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.40046295523643494,
+      "source_uv": [
+        89.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 35,
+      "row": 4,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.9468430876731873,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.5501543283462524,
+      "source_uv": [
+        125.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 36,
+      "row": 4,
+      "col": 4,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8905026316642761,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.45679011940956116,
+      "source_uv": [
+        161.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 37,
+      "row": 4,
+      "col": 5,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8327652812004089,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.3611111044883728,
+      "source_uv": [
+        197.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 38,
+      "row": 4,
+      "col": 6,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8844495415687561,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.44675925374031067,
+      "source_uv": [
+        233.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 39,
+      "row": 4,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        269.5,
+        161.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 40,
+      "row": 5,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        17.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 41,
+      "row": 5,
+      "col": 1,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.9114556908607483,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.49151235818862915,
+      "source_uv": [
+        53.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 42,
+      "row": 5,
+      "col": 2,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8160028457641602,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.3333333432674408,
+      "source_uv": [
+        89.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 43,
+      "row": 5,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8700152039527893,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.422839492559433,
+      "source_uv": [
+        125.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 44,
+      "row": 5,
+      "col": 4,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.735484778881073,
+      "instance_id": 2,
+      "class_name": "object",
+      "mask_coverage": 0.4066357910633087,
+      "source_uv": [
+        161.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 45,
+      "row": 5,
+      "col": 5,
+      "color": "blue",
+      "occupied": true,
+      "confidence": 0.6679229140281677,
+      "instance_id": 5,
+      "class_name": "object",
+      "mask_coverage": 0.3333333432674408,
+      "source_uv": [
+        197.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 46,
+      "row": 5,
+      "col": 6,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.7671471834182739,
+      "instance_id": 2,
+      "class_name": "object",
+      "mask_coverage": 0.4591049253940582,
+      "source_uv": [
+        233.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 47,
+      "row": 5,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 0.8919752836227417,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.010802469216287136,
+      "source_uv": [
+        269.5,
+        197.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 48,
+      "row": 6,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        17.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 49,
+      "row": 6,
+      "col": 1,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8295059204101562,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.35570988059043884,
+      "source_uv": [
+        53.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 50,
+      "row": 6,
+      "col": 2,
+      "color": "blue",
+      "occupied": true,
+      "confidence": 0.7646549940109253,
+      "instance_id": 4,
+      "class_name": "object",
+      "mask_coverage": 0.5054012537002563,
+      "source_uv": [
+        89.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 51,
+      "row": 6,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8458027243614197,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.3827160596847534,
+      "source_uv": [
+        125.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 52,
+      "row": 6,
+      "col": 4,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.5808976888656616,
+      "instance_id": 2,
+      "class_name": "object",
+      "mask_coverage": 0.15046297013759613,
+      "source_uv": [
+        161.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 53,
+      "row": 6,
+      "col": 5,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.6128425598144531,
+      "instance_id": 7,
+      "class_name": "object",
+      "mask_coverage": 0.2538580298423767,
+      "source_uv": [
+        197.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 54,
+      "row": 6,
+      "col": 6,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.7028911113739014,
+      "instance_id": 2,
+      "class_name": "object",
+      "mask_coverage": 0.35262346267700195,
+      "source_uv": [
+        233.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 55,
+      "row": 6,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        269.5,
+        233.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 56,
+      "row": 7,
+      "col": 0,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 1.0,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.0,
+      "source_uv": [
+        17.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 57,
+      "row": 7,
+      "col": 1,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8532527089118958,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.395061731338501,
+      "source_uv": [
+        53.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 58,
+      "row": 7,
+      "col": 2,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8830526471138,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.4444444477558136,
+      "source_uv": [
+        89.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 59,
+      "row": 7,
+      "col": 3,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.8499933481216431,
+      "instance_id": 0,
+      "class_name": "object",
+      "mask_coverage": 0.389660507440567,
+      "source_uv": [
+        125.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 60,
+      "row": 7,
+      "col": 4,
+      "color": "black",
+      "occupied": true,
+      "confidence": 0.6332785487174988,
+      "instance_id": 8,
+      "class_name": "object",
+      "mask_coverage": 0.1705246865749359,
+      "source_uv": [
+        161.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 61,
+      "row": 7,
+      "col": 5,
+      "color": "black",
+      "occupied": true,
+      "confidence": 0.6640097498893738,
+      "instance_id": 8,
+      "class_name": "object",
+      "mask_coverage": 0.22145061194896698,
+      "source_uv": [
+        197.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 62,
+      "row": 7,
+      "col": 6,
+      "color": "white",
+      "occupied": true,
+      "confidence": 0.6111632585525513,
+      "instance_id": 2,
+      "class_name": "object",
+      "mask_coverage": 0.20061728358268738,
+      "source_uv": [
+        233.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    {
+      "index": 63,
+      "row": 7,
+      "col": 7,
+      "color": "empty",
+      "occupied": false,
+      "confidence": 0.9459876418113708,
+      "instance_id": -1,
+      "class_name": "",
+      "mask_coverage": 0.005401234608143568,
+      "source_uv": [
+        269.5,
+        269.5
+      ],
+      "camera_uv": [
+        NaN,
+        NaN
+      ],
+      "target_frame": "",
+      "target": [
+        NaN,
+        NaN,
+        NaN
+      ]
+    }
+  ]
+}

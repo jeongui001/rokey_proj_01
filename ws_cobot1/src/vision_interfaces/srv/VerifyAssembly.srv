@@ -1,0 +1,30 @@
+# When expected_model.cells is empty, VerifyNode uses the latest latched expected model.
+vision_interfaces/BlockModel expected_model
+
+# Percentage in [0, 100]. <= 0 uses the configured default.
+float32 pass_threshold
+
+# Wait for a camera frame received after the request starts.
+bool wait_for_fresh_frame
+
+# <= 0 uses the configured timeout.
+float32 timeout_sec
+---
+bool success
+bool passed
+float32 match_rate
+string message
+vision_interfaces/BlockModel observed_model
+vision_interfaces/Mismatch[] mismatches
+
+# Rectified and perspective-warped physical workspace used for inference.
+sensor_msgs/Image workspace_image
+
+# Instance masks/IDs produced on workspace_image.
+sensor_msgs/Image segmentation_overlay
+
+# N x N observed block mosaic.
+sensor_msgs/Image observed_mosaic
+
+# Original rectified camera image with grid, mismatches and final score.
+sensor_msgs/Image overlay_image
