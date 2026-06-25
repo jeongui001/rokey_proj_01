@@ -180,3 +180,26 @@ ros2 run cobot1 image_processor_node \
 - vision_core 수정: `src/cobot1/cobot1/vision_core/` 에서 직접 수정
 - 새 msg/srv 추가 시: `src/cobot1_interfaces/`에 파일 추가 후 `CMakeLists.txt` 업데이트
 - config 수정: `src/cobot1/config/` 의 yaml 파일 편집
+
+---
+
+## 2026-06-25 10:21 — robot_control 패키지 흡수
+
+팀원의 `src/robot_control/` (assembly_interfaces + robot_controller) 를 기존 구조에 통합.
+
+### 변경 파일
+
+**cobot1_interfaces/**
+- `msg/AssemblyTask.msg` — 신규
+- `action/Assembly.action` — 신규 (ExecuteQueue.action 대체)
+- `action/ExecuteQueue.action` — 삭제
+- `srv/SequencePlan.srv` — 응답 타입 변경
+- `CMakeLists.txt` — 새 msg/action 등록
+
+**cobot1/**
+- `cobot1/robot_controller_node.py` — 실제 DRL 제어 로직으로 교체
+- `cobot1/spiral_detach_discard.py` — 신규 (robot_controller 보조 모듈)
+- `cobot1/sequencer_node.py` — AssemblyTask 메시지 생성으로 변경
+- `cobot1/bridge_node.py` — Assembly 액션으로 전환
+- `setup.py` — 변경 없음
+- `package.xml` — dsr_common2, dsr_msgs2, pick_and_place_text 의존성 추가

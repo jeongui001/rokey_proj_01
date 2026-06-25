@@ -1,0 +1,18 @@
+# Goal: 실행할 작업 목록 (PICK_PLACE / DETACH_DISCARD 혼합 가능)
+cobot1_interfaces/AssemblyTask[] tasks
+---
+# Result
+bool success
+int32 completed_steps
+int32 failed_step
+string error_message
+---
+# Feedback: 단계별 진행 상황
+float32 progress
+int32 current_index
+int32 total_count
+string task_id
+string task_type
+string color
+string step
+string db_record_json

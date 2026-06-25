@@ -16,6 +16,9 @@
   <depend>tf2_ros</depend>
   <depend>cv_bridge</depend>
 
+  <exec_depend>dsr_common2</exec_depend>
+  <exec_depend>dsr_msgs2</exec_depend>
+  <exec_depend>pick_and_place_text</exec_depend>
   <exec_depend>python3-socketio</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>

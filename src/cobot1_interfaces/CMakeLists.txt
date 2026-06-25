@@ -15,10 +15,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SegmentationInstance.msg"
   "msg/Mismatch.msg"
   "msg/WebcamError.msg"
+  "msg/AssemblyTask.msg"
   "srv/ProcessMosaic.srv"
   "srv/VerifyAssembly.srv"
   "srv/SequencePlan.srv"
-  "action/ExecuteQueue.action"
+  "action/Assembly.action"
   DEPENDENCIES builtin_interfaces std_msgs sensor_msgs geometry_msgs
 )
 
