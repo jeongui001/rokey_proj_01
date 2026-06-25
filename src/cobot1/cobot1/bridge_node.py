@@ -68,6 +68,8 @@ class BridgeNode(Node):
                 self._bridge.get_logger().info('이미지 분석 요청 수신')
                 cv_image = self._decode_image(data.get('image_data', ''))
                 self._bridge._current_image_data = data
+                self._bridge._grid_rows = int(data.get('grid_rows', 10))
+                self._bridge._grid_cols = int(data.get('grid_cols', 10))
                 self._bridge.handle_analyze(cv_image)
 
             @self._sio.on('update_grid', namespace='/bridge')
@@ -103,11 +105,14 @@ class BridgeNode(Node):
 
         # ── Bridge → Flask 송신 ──
 
-        def send_analysis_result(self, success, colors_json='', error_message=''):
+        def send_analysis_result(self, success, colors_json='', error_message='',
+                                   grid_rows=10, grid_cols=10):
             self._sio.emit('analysis_result', {
                 'success': success,
                 'grid_json': colors_json,
                 'error_message': error_message,
+                'grid_rows': grid_rows,
+                'grid_cols': grid_cols,
             }, namespace='/bridge')
 
         def send_assembly_started(self):
@@ -161,6 +166,8 @@ class BridgeNode(Node):
         self._current_image_data = None
         self._goal_handle = None
         self._current_tasks = []
+        self._grid_rows = 10
+        self._grid_cols = 10
 
         # Flask 연결
         self._flask = self._FlaskClient(self)
@@ -174,6 +181,8 @@ class BridgeNode(Node):
         """이미지 분석 요청 처리. cv_image: OpenCV BGR 이미지."""
         request = ProcessMosaic.Request()
         request.input_image = self._bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
+        request.grid_rows = self._grid_rows
+        request.grid_cols = self._grid_cols
         future = self.image_client.call_async(request)
         future.add_done_callback(self._on_mosaic_result)
 
@@ -184,7 +193,9 @@ class BridgeNode(Node):
             return
         self._current_colors = flat_colors
         self.get_logger().info('사용자 색상 수정 반영 완료')
-        self._flask.send_analysis_result(True, json.dumps(self._current_colors))
+        self._flask.send_analysis_result(
+            True, json.dumps(self._current_colors),
+            grid_rows=self._grid_rows, grid_cols=self._grid_cols)
         self._preview_block_plan()
 
     def handle_start_assembly(self):
@@ -201,7 +212,9 @@ class BridgeNode(Node):
             response = future.result()
             if response.success:
                 self._current_colors = list(response.colors)
-                self._flask.send_analysis_result(True, json.dumps(self._current_colors))
+                self._flask.send_analysis_result(
+                    True, json.dumps(self._current_colors),
+                    grid_rows=self._grid_rows, grid_cols=self._grid_cols)
             else:
                 self._flask.send_analysis_result(False, error_message=response.message)
         except Exception as e:
@@ -229,6 +242,8 @@ class BridgeNode(Node):
     def _preview_block_plan(self):
         request = SequencePlan.Request()
         request.colors = self._current_colors
+        request.grid_width = self._grid_cols
+        request.grid_height = self._grid_rows
         future = self.sequence_client.call_async(request)
         future.add_done_callback(self._on_preview_result)
 
@@ -252,6 +267,8 @@ class BridgeNode(Node):
     def _call_sequence_plan(self):
         request = SequencePlan.Request()
         request.colors = self._current_colors
+        request.grid_width = self._grid_cols
+        request.grid_height = self._grid_rows
         future = self.sequence_client.call_async(request)
         future.add_done_callback(self._on_sequence_result)
 

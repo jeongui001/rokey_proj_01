@@ -1,19 +1,9 @@
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('cobot1')
-    default_vision_config = os.path.join(pkg_share, 'config', 'vision.yaml')
-    image_params = os.path.join(pkg_share, 'config', 'image_processor.yaml')
     return LaunchDescription([
-        DeclareLaunchArgument('vision_config_file', default_value=default_vision_config),
-
         Node(
             package='cobot1',
             executable='bridge_node',
@@ -25,12 +15,6 @@ def generate_launch_description():
             executable='image_processor_node',
             name='image_processor',
             output='screen',
-            parameters=[
-                image_params,
-                {
-                    'vision_config_file': LaunchConfiguration('vision_config_file'),
-                },
-            ],
         ),
         Node(
             package='cobot1',

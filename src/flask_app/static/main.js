@@ -2,13 +2,12 @@ const socket = io();
 
 const COLOR_HEX = {
   red: "#e3000b", blue: "#006cb7", yellow: "#ffcd00", green: "#00a650",
-  white: "#f0f0f0", black: "#2a2a2a", pink: "#f06292", purple: "#9c27b0",
 };
 
 let currentGrid = null;
 let currentBlockMap = null;
-const GRID_W = 24;
-const GRID_H = 10;
+let GRID_W = 10;
+let GRID_H = 10;
 let selectedColor = "red";
 
 // ── 색상 팔레트 생성 ──
@@ -48,10 +47,14 @@ fileInput.addEventListener("change", (e) => {
 
 document.getElementById("btn-analyze").addEventListener("click", () => {
   if (!preview.src) return;
+  GRID_W = parseInt(document.getElementById("input-cols").value) || 10;
+  GRID_H = parseInt(document.getElementById("input-rows").value) || 10;
   socket.emit("upload_image", {
     image_data: preview.src,
+    grid_rows: GRID_H,
+    grid_cols: GRID_W,
   });
-  addLog("INFO", "이미지 분석 요청 전송");
+  addLog("INFO", `이미지 분석 요청 전송 (${GRID_W}×${GRID_H})`);
 });
 
 // ── 격자 클릭 편집 ──
@@ -116,6 +119,8 @@ document.getElementById("btn-resume").addEventListener("click", () => socket.emi
 
 socket.on("analysis_result", (data) => {
   if (data.success) {
+    if (data.grid_cols) GRID_W = data.grid_cols;
+    if (data.grid_rows) GRID_H = data.grid_rows;
     const flat = JSON.parse(data.grid_json);
     currentGrid = [];
     for (let r = 0; r < GRID_H; r++) {
@@ -123,7 +128,7 @@ socket.on("analysis_result", (data) => {
     }
     drawGrid(currentGrid);
     document.getElementById("section-result").classList.remove("hidden");
-    addLog("INFO", "이미지 분석 완료");
+    addLog("INFO", `이미지 분석 완료 (${GRID_W}×${GRID_H})`);
   } else {
     addLog("ERROR", "분석 실패: " + data.error_message);
   }

@@ -207,24 +207,6 @@ KITTING_TRAY_PROFILES = {
             tool_retract_z_mm=50.0,
         ),
     },
-    "white": {
-        1: KittingTrayProfile(
-            pick_x_mm=0.0,
-            pick_y_mm=0.0,
-            pick_z_mm=0.0,
-            tilted_a_deg=0.0,
-            tool_retract_z_mm=50.0,
-        ),
-    },
-    "black": {
-        1: KittingTrayProfile(
-            pick_x_mm=0.0,
-            pick_y_mm=0.0,
-            pick_z_mm=0.0,
-            tilted_a_deg=0.0,
-            tool_retract_z_mm=50.0,
-        ),
-    },
 }
 
 

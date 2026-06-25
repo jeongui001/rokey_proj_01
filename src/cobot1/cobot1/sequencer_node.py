@@ -12,7 +12,7 @@ class SequencerNode(Node):
     def __init__(self):
         super().__init__('sequencer')
 
-        self.declare_parameter('grid_width', 24)
+        self.declare_parameter('grid_width', 10)
         self.declare_parameter('grid_height', 10)
         self.declare_parameter('start_x', 332.0)
         self.declare_parameter('start_y_type1', 310.0)
@@ -28,8 +28,8 @@ class SequencerNode(Node):
     # ── 서비스 핸들러 ──
 
     def handle_plan(self, request, response):
-        grid_width = self.get_parameter('grid_width').value
-        grid_height = self.get_parameter('grid_height').value
+        grid_width = int(request.grid_width) if request.grid_width > 0 else self.get_parameter('grid_width').value
+        grid_height = int(request.grid_height) if request.grid_height > 0 else self.get_parameter('grid_height').value
 
         self.get_logger().info(
             f'배치 계획 요청: {grid_width}x{grid_height} 그리드')
