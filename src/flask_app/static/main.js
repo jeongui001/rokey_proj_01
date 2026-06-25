@@ -6,6 +6,7 @@ const COLOR_HEX = {
 };
 
 let currentGrid = null;
+let currentBlockMap = null;
 const GRID_W = 24;
 const GRID_H = 10;
 let selectedColor = "red";
@@ -66,6 +67,7 @@ canvas.addEventListener("click", (e) => {
   if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return;
 
   currentGrid[row][col] = selectedColor;
+  currentBlockMap = null;
   drawGrid(currentGrid);
   addLog("INFO", `셀 (${row},${col}) → ${selectedColor}`);
 });
@@ -80,6 +82,7 @@ canvas.addEventListener("contextmenu", (e) => {
   if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return;
 
   currentGrid[row][col] = "";
+  currentBlockMap = null;
   drawGrid(currentGrid);
   addLog("INFO", `셀 (${row},${col}) 비움`);
 });
@@ -130,6 +133,13 @@ socket.on("grid_updated", (data) => {
   addLog("INFO", "격자 수정 반영 완료");
 });
 
+socket.on("block_plan", (data) => {
+  if (!currentGrid) return;
+  currentBlockMap = buildBlockMap(data.blocks, currentGrid);
+  drawGrid(currentGrid);
+  addLog("INFO", "블록 분할 미리보기 표시: " + data.blocks.length + "개 블록");
+});
+
 socket.on("assembly_started", () => {
   document.getElementById("status").textContent = "조립 시작됨";
   document.getElementById("btn-pause").disabled = false;
@@ -164,6 +174,55 @@ socket.on("assembly_error", (data) => {
   addLog("ERROR", "오류: " + data.error_message);
 });
 
+// ── 블록 맵 재구성 ──
+
+function buildBlockMap(blocks, grid) {
+  const map = Array.from({length: GRID_H}, () => Array(GRID_W).fill(-1));
+  let tIdx = 0;
+  let bid = 0;
+
+  for (let layer = 0; layer < GRID_H; layer++) {
+    const row = GRID_H - 1 - layer;
+
+    const runs = [];
+    let i = 0;
+    while (i < GRID_W) {
+      const color = grid[row][i];
+      if (!color || color === "" || color === "empty") { i++; continue; }
+      let len = 1;
+      while (i + len < GRID_W && grid[row][i + len] === color) len++;
+      if (len >= 2) runs.push({len, start: i});
+      i += len;
+    }
+
+    const totalCells = runs.reduce((s, r) => s + r.len, 0);
+    const rowTasks = [];
+    let covered = 0;
+    while (tIdx < blocks.length && covered < totalCells) {
+      const w = blocks[tIdx].block_type === 1 ? 2 : 3;
+      rowTasks.push(w);
+      covered += w;
+      tIdx++;
+    }
+    if (layer % 2 === 1) rowTasks.reverse();
+
+    let rtIdx = 0;
+    for (const run of runs) {
+      let col = run.start;
+      let rem = run.len;
+      while (rem > 0 && rtIdx < rowTasks.length) {
+        const w = rowTasks[rtIdx];
+        for (let c = col; c < col + w; c++) map[row][c] = bid;
+        bid++;
+        col += w;
+        rem -= w;
+        rtIdx++;
+      }
+    }
+  }
+  return map;
+}
+
 // ── 격자 그리기 ──
 
 function drawGrid(grid) {
@@ -177,6 +236,22 @@ function drawGrid(grid) {
     for (let c = 0; c < GRID_W; c++) {
       ctx.fillStyle = COLOR_HEX[grid[r][c]] || "#333";
       ctx.fillRect(c * cs + 1, r * cs + 1, cs - 2, cs - 2);
+    }
+  }
+
+  if (currentBlockMap) {
+    ctx.strokeStyle = "#bf00ff";
+    ctx.lineWidth = 3;
+    const drawn = new Set();
+    for (let r = 0; r < GRID_H; r++) {
+      for (let c = 0; c < GRID_W; c++) {
+        const bid = currentBlockMap[r][c];
+        if (bid < 0 || drawn.has(bid)) continue;
+        let endC = c;
+        while (endC + 1 < GRID_W && currentBlockMap[r][endC + 1] === bid) endC++;
+        ctx.strokeRect(c * cs, r * cs, (endC - c + 1) * cs, cs);
+        drawn.add(bid);
+      }
     }
   }
 }

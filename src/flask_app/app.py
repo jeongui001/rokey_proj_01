@@ -44,6 +44,10 @@ def on_analysis_result(data):
 def on_grid_updated(data):
     socketio.emit('grid_updated', data, namespace='/')
 
+@socketio.on('block_plan', namespace='/bridge')
+def on_block_plan(data):
+    socketio.emit('block_plan', data, namespace='/')
+
 @socketio.on('assembly_started', namespace='/bridge')
 def on_assembly_started(data):
     socketio.emit('assembly_started', data, namespace='/')

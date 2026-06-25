@@ -1,22 +1,11 @@
-"""ROS-independent instance segmentation, grid projection and camera geometry."""
+"""Small image-processing utilities for the cobot Lego vision pipeline."""
 
-from .grid_projection import assign_instance_colors, project_instances_to_grid
-from .models import (
-    CellMismatch,
-    CellSample,
-    ComparisonResult,
-    GridProjectionResult,
-    InstancePrediction,
-    SegmentationResult,
-)
+from .grid_projection import merge_blocks, quantize_image_to_grid, smooth_grid
+from .models import CellSample
 
 __all__ = [
-    'CellMismatch',
     'CellSample',
-    'ComparisonResult',
-    'GridProjectionResult',
-    'InstancePrediction',
-    'SegmentationResult',
-    'assign_instance_colors',
-    'project_instances_to_grid',
+    'merge_blocks',
+    'quantize_image_to_grid',
+    'smooth_grid',
 ]

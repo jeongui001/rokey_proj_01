@@ -1,226 +1,170 @@
 from __future__ import annotations
 
-import math
-from typing import Mapping
-
 import cv2
 import numpy as np
 
-from .models import CellSample, GridProjectionResult, InstancePrediction, SegmentationResult
+from .models import CellSample
 from .mosaic import validate_bgr_image
-from .palette import Palette, PaletteEntry
+from .palette import Palette
 
 
-def _normalised_weights(raw: Mapping[str, float]) -> dict[str, float]:
-    weights = {
-        'instance': max(0.0, float(raw.get('instance', 0.45))),
-        'coverage': max(0.0, float(raw.get('coverage', 0.35))),
-        'color': max(0.0, float(raw.get('color', 0.20))),
-    }
-    total = sum(weights.values())
-    if total <= 0.0:
-        return {'instance': 1.0 / 3.0, 'coverage': 1.0 / 3.0, 'color': 1.0 / 3.0}
-    return {key: value / total for key, value in weights.items()}
+BLOCK_COLORS = ('red', 'yellow', 'green', 'blue')
+BACKGROUND = 'background'
+UNKNOWN = 'unknown'
+NON_BLOCK_COLORS = {BACKGROUND, UNKNOWN, ''}
+UNKNOWN_RGB = (70, 70, 70)
 
 
-def _eroded_mask(mask: np.ndarray, erosion_px: int) -> np.ndarray:
-    if erosion_px <= 0:
-        return mask
-    size = 2 * erosion_px + 1
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size))
-    eroded = cv2.erode(mask.astype(np.uint8), kernel, iterations=1).astype(bool)
-    return eroded if np.any(eroded) else mask
-
-
-def _class_palette_entry(
-    instance: InstancePrediction,
+def _rgb_for_name(
     palette: Palette,
-    class_to_palette: Mapping[str, str],
-) -> PaletteEntry | None:
-    class_key = instance.class_name.strip().lower()
-    mapped_name = class_to_palette.get(class_key)
-    if mapped_name and palette.has(mapped_name):
-        return palette.get(mapped_name)
-    # A model trained directly with palette class names needs no explicit map.
-    palette_names = {name.lower(): name for name in palette.names(include_unoccupied=False)}
-    direct_name = palette_names.get(class_key)
-    return palette.get(direct_name) if direct_name else None
+    name: str,
+    empty_palette_name: str = 'empty',
+) -> tuple[int, int, int]:
+    if name == BACKGROUND:
+        return palette.empty_entry(empty_palette_name).rgb
+    if name == UNKNOWN:
+        return UNKNOWN_RGB
+    return palette.get(name).rgb
 
 
-def _resolve_color(
-    instance: InstancePrediction,
-    pixels_bgr: np.ndarray,
-    palette: Palette,
-    config: dict,
-) -> tuple[PaletteEntry, float]:
-    mode = str(config.get('color_source', 'class_then_pixels')).strip().lower()
-    mapping = {
-        str(key).strip().lower(): str(value).strip()
-        for key, value in dict(config.get('class_to_palette', {})).items()
-    }
-    class_entry = _class_palette_entry(instance, palette, mapping)
-    if mode == 'class':
-        if class_entry is None:
-            raise ValueError(
-                f'No class_to_palette mapping for segmentation class "{instance.class_name}".'
-            )
-        return class_entry, 1.0
-    if mode == 'class_then_pixels' and class_entry is not None:
-        return class_entry, 1.0
-    if mode not in {'pixels', 'class_then_pixels'}:
-        raise ValueError(f'Unsupported grid_projection.color_source: {mode}')
-    entry, confidence, _ = palette.classify_masked_pixels(
-        pixels_bgr, include_unoccupied=False
-    )
-    return entry, confidence
-
-
-def assign_instance_colors(
-    image_bgr: np.ndarray,
-    segmentation: SegmentationResult,
-    palette: Palette,
-    config: dict,
-) -> None:
-    erosion_px = int(config.get('mask_erosion_px', 1))
-    min_pixels = int(config.get('min_color_pixels', 12))
-    for instance in segmentation.instances:
-        mask = _eroded_mask(instance.mask, erosion_px)
-        pixels = image_bgr[mask]
-        if pixels.shape[0] < min_pixels:
-            pixels = image_bgr[instance.mask]
-        if pixels.shape[0] == 0:
-            continue
-        entry, confidence = _resolve_color(instance, pixels, palette, config)
-        instance.color = entry.name
-        instance.rgb = entry.rgb
-        instance.color_confidence = float(confidence)
-
-
-def project_instances_to_grid(
-    image_bgr: np.ndarray,
-    segmentation: SegmentationResult,
-    grid_size: int,
-    palette: Palette,
-    config: dict,
-) -> GridProjectionResult:
-    """Assign dominant instance masks to N x N cells and classify masked colours."""
-
-    validate_bgr_image(image_bgr)
-    if grid_size < 1:
-        raise ValueError('grid_size must be at least 1.')
-    height, width = image_bgr.shape[:2]
-    if (segmentation.image_width, segmentation.image_height) != (width, height):
-        raise ValueError(
-            'Segmentation image size does not match the image used for grid projection: '
-            f'{segmentation.image_width}x{segmentation.image_height} vs {width}x{height}.'
-        )
-    for instance in segmentation.instances:
-        if instance.mask.shape != (height, width):
-            raise ValueError(
-                f'Instance {instance.instance_id} mask shape {instance.mask.shape} '
-                f'does not match image shape {(height, width)}.'
-            )
-
-    assign_instance_colors(image_bgr, segmentation, palette, config)
-    empty_entry = palette.empty_entry(str(config.get('empty_palette_name', 'empty')))
-    min_cell_coverage = float(config.get('min_cell_coverage', 0.12))
-    conflict_coverage = float(config.get('conflict_cell_coverage', 0.08))
-    min_instance_confidence = float(config.get('min_instance_confidence', 0.0))
-    coverage_saturation = max(1e-6, float(config.get('coverage_saturation', 0.60)))
-    erosion_px = int(config.get('mask_erosion_px', 1))
-    min_color_pixels = int(config.get('min_color_pixels', 12))
-    weights = _normalised_weights(dict(config.get('confidence_weights', {})))
-
-    x_edges = np.rint(np.linspace(0, width, grid_size + 1)).astype(int)
-    y_edges = np.rint(np.linspace(0, height, grid_size + 1)).astype(int)
-    cells: list[CellSample] = []
-
-    eligible = [
-        instance for instance in segmentation.instances
-        if instance.score >= min_instance_confidence and instance.area > 0
+def _palette_lab(palette: Palette, empty_palette_name: str) -> dict[str, np.ndarray]:
+    rgb_values = [
+        _rgb_for_name(palette, name, empty_palette_name)
+        for name in (*BLOCK_COLORS, BACKGROUND)
     ]
+    lab = cv2.cvtColor(np.asarray(rgb_values, dtype=np.uint8).reshape(-1, 1, 3), cv2.COLOR_RGB2LAB)
+    return {
+        name: lab[index, 0].astype(np.float32)
+        for index, name in enumerate((*BLOCK_COLORS, BACKGROUND))
+    }
 
-    for row in range(grid_size):
-        for col in range(grid_size):
+
+def quantize_image_to_grid(
+    image_bgr: np.ndarray,
+    palette: Palette,
+    grid_rows: int = 10,
+    grid_cols: int = 10,
+    config: dict | None = None,
+) -> tuple[np.ndarray, list[CellSample]]:
+    validate_bgr_image(image_bgr)
+    grid_rows, grid_cols = int(grid_rows), int(grid_cols)
+    if grid_rows < 1 or grid_cols < 1:
+        raise ValueError('grid_rows and grid_cols must be at least 1.')
+
+    cfg = dict(config or {})
+    inner_ratio = float(np.clip(cfg.get('inner_cell_ratio', 0.70), 0.20, 1.0))
+    background_distance = float(cfg.get('background_lab_distance', 34.0))
+    unknown_distance = float(cfg.get('unknown_lab_distance', 72.0))
+    empty_palette_name = str(cfg.get('empty_palette_name', 'empty'))
+
+    height, width = image_bgr.shape[:2]
+    x_edges = np.rint(np.linspace(0, width, grid_cols + 1)).astype(int)
+    y_edges = np.rint(np.linspace(0, height, grid_rows + 1)).astype(int)
+    lab_palette = _palette_lab(palette, empty_palette_name)
+    grid = np.empty((grid_rows, grid_cols), dtype=object)
+
+    for row in range(grid_rows):
+        for col in range(grid_cols):
             x0, x1 = int(x_edges[col]), int(x_edges[col + 1])
             y0, y1 = int(y_edges[row]), int(y_edges[row + 1])
-            cell_width = max(1, x1 - x0)
-            cell_height = max(1, y1 - y0)
-            cell_area = float(cell_width * cell_height)
-            centre = ((x0 + x1 - 1) / 2.0, (y0 + y1 - 1) / 2.0)
+            pad_x = int(round((x1 - x0) * (1.0 - inner_ratio) / 2.0))
+            pad_y = int(round((y1 - y0) * (1.0 - inner_ratio) / 2.0))
+            sample = image_bgr[y0 + pad_y:max(y0 + pad_y + 1, y1 - pad_y),
+                               x0 + pad_x:max(x0 + pad_x + 1, x1 - pad_x)]
+            median_bgr = np.median(sample.reshape(-1, 3), axis=0).astype(np.uint8)
+            hsv = cv2.cvtColor(median_bgr.reshape(1, 1, 3), cv2.COLOR_BGR2HSV)[0, 0]
+            lab = cv2.cvtColor(median_bgr.reshape(1, 1, 3), cv2.COLOR_BGR2LAB)[0, 0].astype(np.float32)
 
-            overlaps: list[tuple[float, float, InstancePrediction, int]] = []
-            for instance in eligible:
-                overlap_pixels = int(np.count_nonzero(instance.mask[y0:y1, x0:x1]))
-                if overlap_pixels <= 0:
-                    continue
-                coverage = overlap_pixels / cell_area
-                overlaps.append((coverage, instance.score, instance, overlap_pixels))
-            overlaps.sort(key=lambda item: (item[0], item[1]), reverse=True)
-            overlapping_instances = sum(1 for item in overlaps if item[0] >= conflict_coverage)
+            distances = {
+                name: float(np.linalg.norm(lab - value))
+                for name, value in lab_palette.items()
+            }
+            nearest_block = min(BLOCK_COLORS, key=lambda name: distances[name])
+            if distances[BACKGROUND] <= background_distance or hsv[1] < 28 or hsv[2] < 35:
+                grid[row, col] = BACKGROUND
+            elif distances[nearest_block] > unknown_distance:
+                grid[row, col] = UNKNOWN
+            else:
+                grid[row, col] = nearest_block
 
-            if not overlaps or overlaps[0][0] < min_cell_coverage:
-                max_coverage = overlaps[0][0] if overlaps else 0.0
-                empty_confidence = float(
-                    np.clip(1.0 - max_coverage / max(min_cell_coverage, 1e-6), 0.0, 1.0)
-                )
-                cells.append(
-                    CellSample(
-                        row=row,
-                        col=col,
-                        color=empty_entry.name,
-                        rgb=empty_entry.rgb,
-                        occupied=False,
-                        confidence=empty_confidence,
-                        mask_coverage=max_coverage,
-                        overlapping_instances=overlapping_instances,
-                        source_uv=centre,
-                    )
-                )
+    smoothed = smooth_grid(grid)
+    return smoothed, cells_from_grid(smoothed, palette, empty_palette_name)
+
+
+def smooth_grid(grid: np.ndarray) -> np.ndarray:
+    fixed = np.asarray(grid, dtype=object).copy()
+    rows, cols = fixed.shape
+    for row in range(rows):
+        for col in range(1, cols - 1):
+            left, middle, right = fixed[row, col - 1], fixed[row, col], fixed[row, col + 1]
+            if left == right and left not in NON_BLOCK_COLORS and middle != left:
+                fixed[row, col] = left
+    return fixed
+
+
+def merge_blocks(grid: np.ndarray) -> list[dict]:
+    grid = np.asarray(grid, dtype=object)
+    rows, cols = grid.shape
+    blocks: list[dict] = []
+    for row in range(rows):
+        col = 0
+        while col < cols:
+            cell_colour = grid[row, col]
+            if cell_colour in NON_BLOCK_COLORS:
+                col += 1
                 continue
 
-            coverage, _, instance, _ = overlaps[0]
-            local_mask = instance.mask[y0:y1, x0:x1]
-            eroded_local = _eroded_mask(local_mask, erosion_px)
-            local_image = image_bgr[y0:y1, x0:x1]
-            pixels = local_image[eroded_local]
-            if pixels.shape[0] < min_color_pixels:
-                pixels = local_image[local_mask]
-            if pixels.shape[0] < min_color_pixels:
-                pixels = image_bgr[instance.mask]
-            entry, color_confidence = _resolve_color(instance, pixels, palette, config)
+            width, block_colour = _merged_width(grid[row, col:col + 3], 3)
+            if width == 0:
+                width, block_colour = _merged_width(grid[row, col:col + 2], 2)
+            if width == 0:
+                width = 1
+                block_colour = cell_colour
 
-            coverage_confidence = float(np.clip(coverage / coverage_saturation, 0.0, 1.0))
-            confidence = float(
-                weights['instance'] * instance.score
-                + weights['coverage'] * coverage_confidence
-                + weights['color'] * color_confidence
-            )
-            centroid_u, centroid_v = instance.centroid_uv
-            half_width = max(0.5, cell_width / 2.0)
-            half_height = max(0.5, cell_height / 2.0)
-            centroid_offset = max(
-                abs(centroid_u - centre[0]) / half_width,
-                abs(centroid_v - centre[1]) / half_height,
-            )
+            blocks.append({
+                'row': int(row),
+                'col': int(col),
+                'width': int(width),
+                'height': 1,
+                'color': str(block_colour),
+            })
+            col += width
+    return blocks
+
+
+def _merged_width(values: np.ndarray, width: int) -> tuple[int, str]:
+    if len(values) < width or BACKGROUND in values:
+        return 0, ''
+    valid = [str(value) for value in values if value not in NON_BLOCK_COLORS]
+    if not valid:
+        return 0, ''
+    colour = max(set(valid), key=valid.count)
+    if width == 3 and valid.count(colour) >= 2:
+        return 3, colour
+    if width == 2 and len(valid) == 2 and valid[0] == valid[1]:
+        return 2, colour
+    return 0, ''
+
+
+def cells_from_grid(
+    grid: np.ndarray,
+    palette: Palette,
+    empty_palette_name: str = 'empty',
+) -> list[CellSample]:
+    cells: list[CellSample] = []
+    rows, cols = np.asarray(grid, dtype=object).shape
+    for row in range(rows):
+        for col in range(cols):
+            colour = str(grid[row, col])
             cells.append(
                 CellSample(
                     row=row,
                     col=col,
-                    color=entry.name,
-                    rgb=entry.rgb,
-                    occupied=entry.occupied,
-                    confidence=confidence,
-                    instance_id=instance.instance_id,
-                    class_id=instance.class_id,
-                    class_name=instance.class_name,
-                    instance_confidence=instance.score,
-                    mask_coverage=float(coverage),
-                    overlapping_instances=overlapping_instances,
-                    source_uv=centre,
-                    instance_centroid_uv=(centroid_u, centroid_v),
-                    centroid_offset_ratio=float(centroid_offset),
+                    color=colour,
+                    rgb=_rgb_for_name(palette, colour, empty_palette_name),
+                    occupied=colour not in NON_BLOCK_COLORS,
+                    confidence=1.0,
+                    source_uv=((col + 0.5) / cols, (row + 0.5) / rows),
                 )
             )
-
-    return GridProjectionResult(cells=cells, segmentation=segmentation)
+    return cells

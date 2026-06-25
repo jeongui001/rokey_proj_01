@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import threading
-
+import cv2
 import rclpy
 from cv_bridge import CvBridge
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -10,33 +9,38 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 
 from cobot1.vision_core.config import load_vision_config
-from cobot1.vision_core.grid_projection import project_instances_to_grid
-from cobot1.vision_core.mosaic import fit_image, render_cells
-from cobot1.vision_core.overlay import draw_instance_overlay
+from cobot1.vision_core.grid_projection import merge_blocks, quantize_image_to_grid
+from cobot1.vision_core.mosaic import (
+    DEFAULT_CELL_ASPECT_HEIGHT,
+    DEFAULT_CELL_ASPECT_WIDTH,
+    DEFAULT_GRID_COLS,
+    DEFAULT_GRID_ROWS,
+    fit_image,
+    preview_size_for_cell_aspect,
+    render_cells,
+)
+from cobot1.vision_core.overlay import draw_grid_overlay
 from cobot1.vision_core.palette import Palette
-from cobot1.vision_core.segmentation import create_segmenter
 from cobot1_interfaces.srv import ProcessMosaic
 
 
 class ImageProcessorNode(Node):
-    """Segment an input image, make an N x N block model and calculate robot targets."""
+    """Quantize an input image and return a fixed 10 x 10 colour grid."""
 
     def __init__(self) -> None:
         super().__init__('image_processor')
         self._callback_group = ReentrantCallbackGroup()
         self._bridge = CvBridge()
-        self._segmenter_lock = threading.Lock()
 
         self.declare_parameter('vision_config_file', '')
         self.declare_parameter('service_name', '/image/analyze')
         self.declare_parameter('fitted_topic', '/vision/source/fitted')
-        self.declare_parameter('segmentation_overlay_topic', '/vision/source/segmentation_overlay')
+        self.declare_parameter('overlay_topic', '/vision/source/overlay')
         self.declare_parameter('mosaic_topic', '/vision/mosaic')
-        self.declare_parameter('segmentation_backend_override', '')
-        self.declare_parameter('segmentation_model_path_override', '')
-        self.declare_parameter('segmentation_device_override', '')
-        self.declare_parameter('warmup_segmenter', False)
-        self.declare_parameter('grid_size', 16)
+        self.declare_parameter('grid_rows', DEFAULT_GRID_ROWS)
+        self.declare_parameter('grid_cols', DEFAULT_GRID_COLS)
+        self.declare_parameter('cell_aspect_width', DEFAULT_CELL_ASPECT_WIDTH)
+        self.declare_parameter('cell_aspect_height', DEFAULT_CELL_ASPECT_HEIGHT)
 
         config_file = str(self.get_parameter('vision_config_file').value)
         if not config_file:
@@ -45,24 +49,11 @@ class ImageProcessorNode(Node):
         self._palette = Palette.from_config(self._config)
         self._projection_config = dict(self._config.get('grid_projection', {}))
 
-        segmenter_overrides = {
-            'backend': str(self.get_parameter('segmentation_backend_override').value).strip(),
-            'model_path': str(self.get_parameter('segmentation_model_path_override').value).strip(),
-            'device': str(self.get_parameter('segmentation_device_override').value).strip(),
-        }
-        self._segmenter = create_segmenter(
-            self._config, 'image_processor', segmenter_overrides
-        )
-        if bool(self.get_parameter('warmup_segmenter').value):
-            self.get_logger().info('Warming up image-processor segmenter...')
-            with self._segmenter_lock:
-                self._segmenter.warmup()
-
         self._fitted_publisher = self.create_publisher(
             Image, str(self.get_parameter('fitted_topic').value), 1
         )
-        self._segmentation_publisher = self.create_publisher(
-            Image, str(self.get_parameter('segmentation_overlay_topic').value), 1
+        self._overlay_publisher = self.create_publisher(
+            Image, str(self.get_parameter('overlay_topic').value), 1
         )
         self._mosaic_publisher = self.create_publisher(
             Image, str(self.get_parameter('mosaic_topic').value), 1
@@ -75,9 +66,21 @@ class ImageProcessorNode(Node):
         )
 
         self.get_logger().info(
-            f'ImageProcessor ready: backend={self._segmenter.backend_name}, '
-            f'model={self._segmenter.model_name}, service={self.get_parameter("service_name").value}'
+            'ImageProcessor ready: backend=palette_quantization, '
+            f'grid={self.get_parameter("grid_cols").value}x{self.get_parameter("grid_rows").value}, '
+            f'service={self.get_parameter("service_name").value}'
         )
+
+    def _grid_settings(self) -> tuple[int, int, float, float]:
+        grid_rows = int(self.get_parameter('grid_rows').value)
+        grid_cols = int(self.get_parameter('grid_cols').value)
+        cell_aspect_width = float(self.get_parameter('cell_aspect_width').value)
+        cell_aspect_height = float(self.get_parameter('cell_aspect_height').value)
+        if grid_rows < 1 or grid_cols < 1:
+            raise ValueError('grid_rows and grid_cols must be at least 1.')
+        if cell_aspect_width <= 0.0 or cell_aspect_height <= 0.0:
+            raise ValueError('cell_aspect_width and cell_aspect_height must be positive.')
+        return grid_rows, grid_cols, cell_aspect_width, cell_aspect_height
 
     def _process_request(
         self,
@@ -86,14 +89,21 @@ class ImageProcessorNode(Node):
     ) -> ProcessMosaic.Response:
         try:
             source = self._bridge.imgmsg_to_cv2(request.input_image, desired_encoding='bgr8')
-            grid_size = int(self.get_parameter('grid_size').value)
+            grid_rows, grid_cols, cell_aspect_width, cell_aspect_height = self._grid_settings()
             mosaic_config = self._config.get('mosaic', {})
             max_grid_size = int(mosaic_config.get('max_grid_size', 64))
-            if not 1 <= grid_size <= max_grid_size:
-                raise ValueError(f'grid_size must be in [1, {max_grid_size}].')
+            if max(grid_rows, grid_cols) > max_grid_size:
+                raise ValueError(
+                    f'grid size must not exceed mosaic.max_grid_size={max_grid_size}.'
+                )
 
-            output_width = int(mosaic_config.get('default_output_width', 512))
-            output_height = int(mosaic_config.get('default_output_height', 512))
+            output_width, output_height = preview_size_for_cell_aspect(
+                grid_rows,
+                grid_cols,
+                cell_aspect_width,
+                cell_aspect_height,
+                int(mosaic_config.get('default_output_height', 512)),
+            )
             empty_rgb = self._palette.empty_entry(
                 str(self._projection_config.get('empty_palette_name', 'empty'))
             ).rgb
@@ -103,49 +113,58 @@ class ImageProcessorNode(Node):
                 str(mosaic_config.get('fit_mode', 'center_crop')),
                 letterbox_bgr=letterbox_bgr,
             )
-            with self._segmenter_lock:
-                segmentation = self._segmenter.infer(fitted)
-            projected = project_instances_to_grid(
+            grid, cells = quantize_image_to_grid(
                 fitted,
-                segmentation,
-                grid_size,
                 self._palette,
-                self._projection_config,
+                grid_rows,
+                grid_cols=grid_cols,
+                config=self._projection_config,
             )
+            blocks = merge_blocks(grid)
             mosaic = render_cells(
-                projected.cells,
-                grid_size,
+                cells,
+                grid_rows,
                 output_width,
                 output_height,
+                grid_cols=grid_cols,
                 draw_grid=bool(mosaic_config.get('draw_grid', True)),
                 grid_thickness=int(mosaic_config.get('grid_line_thickness', 1)),
+                blocks=blocks,
             )
-            segmentation_overlay = draw_instance_overlay(
+            palette_overlay = cv2.resize(
                 fitted,
-                projected.segmentation,
+                (output_width, output_height),
+                interpolation=cv2.INTER_LINEAR,
+            )
+            palette_overlay = draw_grid_overlay(
+                palette_overlay,
+                cells,
+                blocks,
+                grid_rows,
+                grid_cols,
                 alpha=float(self._projection_config.get('overlay_alpha', 0.42)),
-                draw_grid_size=grid_size,
             )
 
             fitted_message = self._bridge.cv2_to_imgmsg(fitted, encoding='bgr8')
             fitted_message.header = request.input_image.header
-            segmentation_message = self._bridge.cv2_to_imgmsg(
-                segmentation_overlay, encoding='bgr8'
+            overlay_message = self._bridge.cv2_to_imgmsg(
+                palette_overlay, encoding='bgr8'
             )
-            segmentation_message.header = request.input_image.header
+            overlay_message.header = request.input_image.header
             mosaic_message = self._bridge.cv2_to_imgmsg(mosaic, encoding='bgr8')
             mosaic_message.header = request.input_image.header
 
             response.success = True
             response.message = (
-                f'Segmented {len(projected.segmentation.instances)} instances and generated '
-                f'{grid_size}x{grid_size} grid with '
-                f'{sum(1 for cell in projected.cells if cell.occupied)} occupied cells.'
+                f'Palette-quantized {grid_cols}x{grid_rows} grid with '
+                f'{sum(1 for cell in cells if cell.occupied)} occupied cells and '
+                f'{len(blocks)} merged block candidates; '
+                f'cell aspect={cell_aspect_width:g}:{cell_aspect_height:g}.'
             )
-            response.colors = [cell.color for cell in projected.cells]
+            response.colors = [cell.color if cell.occupied else '' for cell in cells]
 
             self._fitted_publisher.publish(fitted_message)
-            self._segmentation_publisher.publish(segmentation_message)
+            self._overlay_publisher.publish(overlay_message)
             self._mosaic_publisher.publish(mosaic_message)
             return response
 

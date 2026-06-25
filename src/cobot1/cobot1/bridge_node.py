@@ -125,6 +125,11 @@ class BridgeNode(Node):
                 'error_message': error_message,
             }, namespace='/bridge')
 
+        def send_block_plan(self, blocks):
+            self._sio.emit('block_plan', {
+                'blocks': blocks,
+            }, namespace='/bridge')
+
     # ════════════════════════════════════════════
     #  ROS2 초기화
     # ════════════════════════════════════════════
@@ -180,6 +185,7 @@ class BridgeNode(Node):
         self._current_colors = flat_colors
         self.get_logger().info('사용자 색상 수정 반영 완료')
         self._flask.send_analysis_result(True, json.dumps(self._current_colors))
+        self._preview_block_plan()
 
     def handle_start_assembly(self):
         """조립 시작 요청 처리."""
@@ -219,6 +225,29 @@ class BridgeNode(Node):
     # ════════════════════════════════════════════
     #  Sequencer 서비스 (배치 계획)
     # ════════════════════════════════════════════
+
+    def _preview_block_plan(self):
+        request = SequencePlan.Request()
+        request.colors = self._current_colors
+        future = self.sequence_client.call_async(request)
+        future.add_done_callback(self._on_preview_result)
+
+    def _on_preview_result(self, future):
+        try:
+            response = future.result()
+            if response.error_message:
+                self.get_logger().warn(
+                    f'블록 미리보기 실패: {response.error_message}')
+                return
+            block_info = [
+                {'color': t.color, 'block_type': int(t.block_type)}
+                for t in response.tasks
+            ]
+            self._flask.send_block_plan(block_info)
+            self.get_logger().info(
+                f'블록 미리보기 전송: {len(block_info)}개 블록')
+        except Exception as e:
+            self.get_logger().error(f'블록 미리보기 실패: {e}')
 
     def _call_sequence_plan(self):
         request = SequencePlan.Request()
