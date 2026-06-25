@@ -1,18 +1,10 @@
 /**:
   ros__parameters:
-    camera_info_topic: /front_camera/camera_info
     service_name: /image/analyze
     fitted_topic: /vision/source/fitted
-    segmentation_overlay_topic: /vision/source/segmentation_overlay
+    overlay_topic: /vision/source/overlay
     mosaic_topic: /vision/mosaic
-    expected_model_topic: /vision/expected_model
-    base_frame_override: ""
-    camera_frame_override: ""
-    calibration_ready: false
-    tf_timeout_sec: 1.0
-
-    # Empty strings use the selected role in vision.yaml.
-    segmentation_backend_override: ""
-    segmentation_model_path_override: ""
-    segmentation_device_override: ""
-    warmup_segmenter: false
+    grid_rows: 10
+    grid_cols: 10
+    cell_aspect_width: 15.9
+    cell_aspect_height: 38.0

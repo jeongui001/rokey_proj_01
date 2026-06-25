@@ -1,15 +1,9 @@
 from __future__ import annotations
 
-import copy
-import os
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
-import numpy as np
 import yaml
-
-
-SUPPORTED_SEGMENTATION_BACKENDS = {'ultralytics', 'opencv_components'}
 
 
 def load_vision_config(path: str | Path) -> dict[str, Any]:
@@ -32,67 +26,17 @@ def validate_vision_config(config: dict[str, Any]) -> None:
     if not any(not bool(item.get('occupied', True)) for item in config['palette']['entries']):
         raise ValueError('palette.entries requires at least one occupied=false background entry.')
 
-    workspace = config.get('workspace', {})
-    roi = np.asarray(workspace.get('roi_normalized', []), dtype=np.float64)
-    if roi.shape != (4, 2):
-        raise ValueError('workspace.roi_normalized must contain four [u, v] points.')
-    if np.any(roi < 0.0) or np.any(roi > 1.0):
-        raise ValueError('workspace.roi_normalized values must be in [0, 1].')
-
     max_grid_size = int(config.get('mosaic', {}).get('max_grid_size', 64))
     if max_grid_size < 1:
         raise ValueError('mosaic.max_grid_size must be at least 1.')
 
-    segmentation = config.get('segmentation', {})
-    for role in ('image_processor', 'verifier'):
-        merged = segmentation_config(config, role)
-        backend = str(merged.get('backend', 'opencv_components')).strip().lower()
-        if backend not in SUPPORTED_SEGMENTATION_BACKENDS:
-            raise ValueError(
-                f'Unsupported segmentation backend for {role}: {backend}. '
-                f'Supported: {sorted(SUPPORTED_SEGMENTATION_BACKENDS)}'
-            )
-
     projection = config.get('grid_projection', {})
-    min_coverage = float(projection.get('min_cell_coverage', 0.12))
-    if not 0.0 <= min_coverage <= 1.0:
-        raise ValueError('grid_projection.min_cell_coverage must be in [0, 1].')
-
-
-def roi_normalized(config: dict[str, Any]) -> np.ndarray:
-    return np.asarray(config['workspace']['roi_normalized'], dtype=np.float64)
-
-
-def _deep_merge(base: dict[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
-    result = copy.deepcopy(base)
-    for key, value in override.items():
-        if isinstance(value, Mapping) and isinstance(result.get(key), Mapping):
-            result[key] = _deep_merge(dict(result[key]), value)
-        else:
-            result[key] = copy.deepcopy(value)
-    return result
-
-
-def segmentation_config(
-    config: dict[str, Any],
-    role: str,
-    overrides: Mapping[str, Any] | None = None,
-) -> dict[str, Any]:
-    root = config.get('segmentation', {})
-    merged = _deep_merge(dict(root.get('defaults', {})), dict(root.get(role, {})))
-    if overrides:
-        cleaned = {key: value for key, value in overrides.items() if value not in ('', None)}
-        merged = _deep_merge(merged, cleaned)
-    merged['role'] = role
-    return merged
-
-
-def resolve_config_path(config: dict[str, Any], raw_path: str) -> str:
-    value = os.path.expandvars(os.path.expanduser(str(raw_path).strip()))
-    if not value:
-        return ''
-    path = Path(value)
-    if not path.is_absolute():
-        base = Path(config.get('_meta', {}).get('config_directory', '.'))
-        path = base / path
-    return str(path.resolve())
+    inner_ratio = float(projection.get('inner_cell_ratio', 0.70))
+    if not 0.0 < inner_ratio <= 1.0:
+        raise ValueError('grid_projection.inner_cell_ratio must be in (0, 1].')
+    for key in ('background_lab_distance', 'unknown_lab_distance'):
+        if float(projection.get(key, 1.0)) <= 0.0:
+            raise ValueError(f'grid_projection.{key} must be positive.')
+    overlay_alpha = float(projection.get('overlay_alpha', 0.42))
+    if not 0.0 <= overlay_alpha <= 1.0:
+        raise ValueError('grid_projection.overlay_alpha must be in [0, 1].')

@@ -68,7 +68,7 @@ class Palette:
             if not entry.occupied:
                 return entry
         raise ValueError(
-            'Palette needs at least one occupied=false entry so cells without masks can be represented.'
+            'Palette needs at least one occupied=false entry for background cells.'
         )
 
     def names(self, include_unoccupied: bool = True) -> list[str]:
@@ -106,16 +106,3 @@ class Palette:
         distance = float(distances[local_index])
         confidence = float(exp(-((distance / self.confidence_scale) ** 2)))
         return self.entries[global_index], confidence, distance
-
-    def classify_masked_pixels(
-        self,
-        pixels_bgr: np.ndarray,
-        *,
-        include_unoccupied: bool = False,
-    ) -> tuple[PaletteEntry, float, float]:
-        pixels = np.asarray(pixels_bgr)
-        if pixels.ndim != 2 or pixels.shape[1] != 3 or pixels.shape[0] == 0:
-            raise ValueError('pixels_bgr must have shape [N, 3] with N > 0.')
-        # Per-channel median is robust to highlights and thin edge contamination.
-        representative = np.median(pixels.astype(np.float32), axis=0)
-        return self.classify_bgr(representative, include_unoccupied=include_unoccupied)
