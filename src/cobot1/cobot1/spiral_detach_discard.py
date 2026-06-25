@@ -179,13 +179,13 @@ def execute_detach_discard(
     controller.move_linear(detach_approach_pose, "DETACH_APPROACH")
 
     _step("RG2_OPEN")
-    controller.rg2_open_and_wait()
+    controller.rg2_release()
 
     _step("DETACH_DESCEND")
     controller.move_linear(task.detach_pose, "DETACH_DESCEND")
 
     _step("RG2_CLOSE")
-    controller.rg2_close_and_wait()
+    controller.rg2_grip()
 
     _step("SPIRAL_DETACH")
     success = spiral_detach_only(
@@ -209,7 +209,7 @@ def execute_detach_discard(
     controller.move_linear(task.basket_pose, "BASKET_DESCEND")
 
     _step("RG2_OPEN")
-    controller.rg2_open_and_wait()
+    controller.rg2_release()
 
     _step("BASKET_LIFT")
     controller.move_linear(basket_approach_pose, "BASKET_LIFT")

@@ -121,8 +121,10 @@ class BridgeNode(Node):
         def send_assembly_progress(self, data):
             self._sio.emit('assembly_progress', data, namespace='/bridge')
 
-        def send_assembly_done(self):
-            self._sio.emit('assembly_done', {}, namespace='/bridge')
+        def send_assembly_done(self, completed_steps=0):
+            self._sio.emit('assembly_done', {
+                'completed_steps': completed_steps,
+            }, namespace='/bridge')
 
         def send_assembly_error(self, failed_step, error_message):
             self._sio.emit('assembly_error', {
@@ -310,15 +312,27 @@ class BridgeNode(Node):
 
     def _on_robot_feedback(self, feedback_msg):
         fb = feedback_msg.feedback
-        if 0 <= fb.current_index < len(self._current_tasks):
-            t = self._current_tasks[fb.current_index]
-            db.insert_placement(fb.current_index, t.color, t.y_position)
-        self._flask.send_assembly_progress({'current_step': fb.current_index})
+        total = len(self._current_tasks)
+        idx = fb.current_index
+        if 0 <= idx < total:
+            t = self._current_tasks[idx]
+            db.insert_placement(idx, t.color, t.y_position)
+            color = t.color
+            action = 'place'
+        else:
+            color = ''
+            action = ''
+        self._flask.send_assembly_progress({
+            'current_step': idx,
+            'total_steps': total,
+            'current_color': color,
+            'current_action': action,
+        })
 
     def _on_robot_result(self, future):
         result = future.result().result
         if not result.error_message:
-            self._flask.send_assembly_done()
+            self._flask.send_assembly_done(len(self._current_tasks))
         else:
             db.insert_error(result.failed_step, 'ACTION_FAIL', result.error_message)
             self._flask.send_assembly_error(result.failed_step, result.error_message)

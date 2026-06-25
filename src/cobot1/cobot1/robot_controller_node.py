@@ -66,18 +66,8 @@ PLACE_LINEAR_ACCELERATION: List[float] = [10.0, 10.0]
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. RG2 설정
 # ─────────────────────────────────────────────────────────────────────────────
-RG2_FORCE_VALUE = 400       # 파지 힘 (단위: 1/10 N)
-RG2_STATUS_POLL_SEC = 0.1   # Busy 폴링 주기 (초)
-RG2_SETTLE_WAIT_SEC = 0.2   # RG2 Open 동작 완료 후 안정화 대기 (초)
-
 # Pick 하강 완료 후 그립 전 대기 (초)
 PICK_PRE_GRIP_WAIT_SEC = 0.3
-
-# RG2 Close Busy 종료 후 추가 안정화 대기 (초) — 총 대기 = 정확히 이 값
-PICK_POST_GRIP_WAIT_SEC = 0.5
-
-# Place 해제 후 안정화 대기 (초)
-PLACE_RELEASE_WAIT_SEC = 0.2
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. Place 고정 설정
@@ -101,11 +91,12 @@ MOVE_HOME_AT_QUEUE_START = True   # 큐 시작 전 홈 이동 여부
 MOVE_HOME_AT_QUEUE_END = False    # 큐 완료 후 홈 이동 여부
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. RG2 Modbus TCP 접속 설정
+# 6. RG2 Digital I/O 설정
 # ─────────────────────────────────────────────────────────────────────────────
-GRIPPER_NAME = "rg2"
-TOOLCHANGER_IP = "192.168.1.1"
-TOOLCHANGER_PORT = "502"
+GRIP_DO_CHANNEL = 1
+RELEASE_DO_CHANNEL = 2
+GRIP_DI_CHANNEL = 1
+RELEASE_DI_CHANNEL = 2
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. Action Server 설정
@@ -235,9 +226,9 @@ KITTING_TRAY_PROFILES = {
             profile_id="yellow_2x2",
             color="yellow",
             block_type="2x2",
-            overhead_pose=CartesianPose(203.26, -97.78, 270.22, 89.97, -179.68, 90.34),
+            overhead_pose=(203.26, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(203.26, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
             profile_id="yellow_3x2",
@@ -245,7 +236,7 @@ KITTING_TRAY_PROFILES = {
             block_type="3x2",
             overhead_pose=CartesianPose(256.98, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(256.98, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
     },
     "red": {
@@ -255,7 +246,7 @@ KITTING_TRAY_PROFILES = {
             block_type="2x2",
             overhead_pose=CartesianPose(308.64, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(308.64, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
             profile_id="red_3x2",
@@ -263,7 +254,7 @@ KITTING_TRAY_PROFILES = {
             block_type="3x2",
             overhead_pose=CartesianPose(361.50, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(361.50, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
     },
     "blue": {
@@ -273,7 +264,7 @@ KITTING_TRAY_PROFILES = {
             block_type="2x2",
             overhead_pose=CartesianPose(438.19, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(438.19, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
             profile_id="blue_3x2",
@@ -281,7 +272,7 @@ KITTING_TRAY_PROFILES = {
             block_type="3x2",
             overhead_pose=CartesianPose(491.30, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(491.30, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
     },
     "green": {
@@ -291,7 +282,7 @@ KITTING_TRAY_PROFILES = {
             block_type="2x2",
             overhead_pose=CartesianPose(545.08, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(545.08, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
         # 임시: 초록 3x2 트레이로 사용. 실제 초록 3x2 트레이 티칭 후 좌표 업데이트 필요.
         "3x2": KittingTrayProfile(
@@ -300,7 +291,7 @@ KITTING_TRAY_PROFILES = {
             block_type="3x2",
             overhead_pose=CartesianPose(600.19, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(600.19, -97.78,  15.80, 90.00, -153.04, 90.38),
-            tool_retract_z_mm=40.0,
+            tool_retract_z_mm=-40.0,
         ),
     },
 }
@@ -355,7 +346,6 @@ class RobotMotionController:
         self._node = node
         self._logger = node.get_logger()
 
-        # DR_init.__dsr__node 설정 후에 SDK 모듈을 임포트해야 하므로 지연 바인딩
         from DSR_ROBOT2 import (
             movej,
             movel,
@@ -365,8 +355,20 @@ class RobotMotionController:
             DR_TOOL,
             DR_MV_MOD_REL,
             get_current_posx,
+            set_digital_output,
+            get_digital_input,
+            ON,
+            OFF,
+            set_tcp,
+            set_tool,
+            add_tool,
         )
         from DR_common2 import posj
+
+        # 티치 펜던트에서 Tool/TCP 설정 완료된 상태. 코드 설정은 실제 컨트롤러에서 불필요.
+        # add_tool("RG2", 1.29, [9.93, 1.47, 5.16], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        # set_tool("RG2")
+        # set_tcp("RG2_TCP", [0.0, 0.0, 228.0, 0.0, 0.0, 0.0])
 
         self._movej = movej
         self._movel = movel
@@ -377,13 +379,10 @@ class RobotMotionController:
         self._DR_MV_MOD_REL = DR_MV_MOD_REL
         self._get_current_posx = get_current_posx
         self._posj = posj
-
-        from pick_and_place_text.onrobot import RG
-        self.gripper = RG(
-            GRIPPER_NAME,
-            TOOLCHANGER_IP,
-            TOOLCHANGER_PORT,
-        )
+        self._set_digital_output = set_digital_output
+        self._get_digital_input = get_digital_input
+        self._ON = ON
+        self._OFF = OFF
 
         self._logger.info("RobotMotionController 초기화 완료")
 
@@ -494,28 +493,26 @@ class RobotMotionController:
             c_deg=float(pos[5]),
         )
 
-    # ── RG2 그리퍼 제어 ───────────────────────────────────────────────────────
+    # ── RG2 그리퍼 제어 (Digital I/O) ──────────────────────────────────────────
 
-    def wait_rg2_complete(self, settle_sec: float) -> None:
-        """
-        RG2 Busy가 끝날 때까지 폴링하고, 종료 후 settle_sec만큼 추가 대기한다.
-        settle_sec 값은 호출처에서 명시적으로 전달한다.
-        """
-        while self.gripper.get_status()[0]:
-            time.sleep(RG2_STATUS_POLL_SEC)
-        self._wait(settle_sec)
+    def _wait_di(self, channel: int) -> None:
+        """Digital Input이 ON이 될 때까지 폴링한다."""
+        while not self._get_digital_input(channel):
+            time.sleep(0.1)
 
-    def rg2_open_and_wait(self) -> None:
-        """그리퍼를 열고 완전히 열릴 때까지 대기한다."""
-        self._logger.info("RG2 열기")
-        self.gripper.open_gripper(force_val=RG2_FORCE_VALUE)
-        self.wait_rg2_complete(settle_sec=RG2_SETTLE_WAIT_SEC)
+    def rg2_grip(self) -> None:
+        """Digital I/O로 그리퍼를 닫고 완료를 대기한다."""
+        self._logger.info(f"RG2 grip (DO{GRIP_DO_CHANNEL}=ON, DO{RELEASE_DO_CHANNEL}=OFF)")
+        self._set_digital_output(GRIP_DO_CHANNEL, self._ON)
+        self._set_digital_output(RELEASE_DO_CHANNEL, self._OFF)
+        self._wait_di(GRIP_DI_CHANNEL)
 
-    def rg2_close_and_wait(self) -> None:
-        """그리퍼를 닫고 파지가 완료될 때까지 대기한다 (표준 0.2초 settle)."""
-        self._logger.info("RG2 닫기")
-        self.gripper.close_gripper(force_val=RG2_FORCE_VALUE)
-        self.wait_rg2_complete(settle_sec=RG2_SETTLE_WAIT_SEC)
+    def rg2_release(self) -> None:
+        """Digital I/O로 그리퍼를 열고 완료를 대기한다."""
+        self._logger.info(f"RG2 release (DO{RELEASE_DO_CHANNEL}=ON, DO{GRIP_DO_CHANNEL}=OFF)")
+        self._set_digital_output(RELEASE_DO_CHANNEL, self._ON)
+        self._set_digital_output(GRIP_DO_CHANNEL, self._OFF)
+        self._wait_di(RELEASE_DI_CHANNEL)
 
     # ── 키팅 트레이 Pick 시퀀스 ───────────────────────────────────────────────
 
@@ -550,11 +547,15 @@ class RobotMotionController:
             if step_callback is not None:
                 step_callback(name)
 
-        # 1. 트레이 전체 상부 Pose로 이동
+        # 1. 그리퍼 열기 (블록을 잡을 수 있도록 준비)
+        _step("KITTING_RELEASE")
+        self.rg2_release()
+
+        # 2. 트레이 전체 상부 Pose로 이동
         _step("KITTING_OVERHEAD_MOVE")
         self.move_linear(profile.overhead_pose, "KITTING_OVERHEAD_MOVE")
 
-        # 2. 상부 Pose → Pick Pose: Z와 A/B/C를 한 번의 movel에서 동시에 변경
+        # 3. 상부 Pose → Pick Pose: Z와 A/B/C를 한 번의 movel에서 동시에 변경
         _step("KITTING_PICK_DESCEND")
         self.move_linear(profile.pick_pose, "KITTING_PICK_DESCEND")
 
@@ -562,18 +563,9 @@ class RobotMotionController:
         _step("KITTING_PRE_GRIP_WAIT")
         self._wait(PICK_PRE_GRIP_WAIT_SEC)
 
-        # 4. RG2 Close — Busy 폴링을 직접 처리하여 단계 로그 분리
-        #    rg2_close_and_wait()을 사용하지 않음:
-        #    해당 메서드는 Busy 후 0.2초를 추가하므로 후속 0.5초와 합산되어 총 0.7초가 됨
+        # 4. RG2 grip (Digital I/O — wait_digital_input으로 완료 대기)
         _step("KITTING_GRIP")
-        self._logger.info("RG2 키팅 파지 닫기")
-        self.gripper.close_gripper(force_val=RG2_FORCE_VALUE)
-        while self.gripper.get_status()[0]:
-            time.sleep(RG2_STATUS_POLL_SEC)
-
-        # 5. Busy 종료 후 정확히 0.5초 추가 대기 (파지 안정화)
-        _step("KITTING_POST_GRIP_WAIT")
-        self._wait(PICK_POST_GRIP_WAIT_SEC)
+        self.rg2_grip()
 
         # 6. 기울어진 Tool 방향 유지 상태에서 Tool 기준 +Z 40mm 상대 인출
         _step("KITTING_TOOL_Z_RETRACT")
@@ -669,11 +661,9 @@ class RobotMotionController:
             acc=PLACE_LINEAR_ACCELERATION,
         )
 
-        # 3. RG2 열어 블록 해제 (RG2 Open 안정화 0.2초 유지)
+        # 3. RG2 release (Digital I/O — wait_digital_input으로 완료 대기)
         _step("PLACE_RELEASE")
-        self._logger.info("RG2 열기 (배치 해제)")
-        self.gripper.open_gripper(force_val=RG2_FORCE_VALUE)
-        self.wait_rg2_complete(settle_sec=PLACE_RELEASE_WAIT_SEC)
+        self.rg2_release()
 
         # 4. 같은 Place 상부 Pose로 복귀 (Home 이동 없음)
         _step("RETURN_PLACE_OVERHEAD")
@@ -711,14 +701,14 @@ class RobotControllerNode(Node):
     """
 
     def __init__(self) -> None:
-        super().__init__("robot_controller")
+        super().__init__("robot_controller", namespace="dsr01")
 
-        DR_init.__dsr__node = self
+        setattr(DR_init, '__dsr__node', self)
+        self.get_logger().info(
+            f"DR_init.__dsr__node 확인: {getattr(DR_init, '__dsr__node', None)}")
 
         self._busy_lock = Lock()
         self._busy = False
-
-        # ReentrantCallbackGroup: execute 스레드 실행 중에도 goal/cancel 처리 가능
         self._action_callback_group = ReentrantCallbackGroup()
         self._motion_controller = RobotMotionController(self)
 
@@ -770,6 +760,8 @@ class RobotControllerNode(Node):
                     return GoalResponse.REJECT
 
             self._busy = True
+            self.get_logger().info(
+                f"Goal 수락: {len(tasks)}개 task")
             return GoalResponse.ACCEPT
 
     def publish_feedback(
@@ -807,10 +799,12 @@ class RobotControllerNode(Node):
         try:
             tasks = goal_handle.request.tasks
             total_count = len(tasks)
+            self.get_logger().info(f"Queue 실행 시작: {total_count}개 task")
 
             self.publish_feedback(goal_handle, current_index=0)
 
             if MOVE_HOME_AT_QUEUE_START:
+                self.get_logger().info("홈 이동 중...")
                 self._motion_controller.move_home()
 
             for current_index, task_msg in enumerate(tasks):
@@ -822,6 +816,10 @@ class RobotControllerNode(Node):
                 normalized_color = normalize_color(task_msg.color)
                 block_type_str = determine_block_type(task_msg.block_type)
                 place_y_mm = float(task_msg.y_position)
+
+                self.get_logger().info(
+                    f"[{current_index+1}/{total_count}] "
+                    f"color={normalized_color}, type={block_type_str}, y={place_y_mm:.2f}")
 
                 pick_task = PickPlaceTask(
                     color=normalized_color,
@@ -849,6 +847,7 @@ class RobotControllerNode(Node):
 
             self.publish_feedback(goal_handle, current_index=total_count)
 
+            self.get_logger().info(f"Queue 완료: {total_count}개 task 성공")
             goal_handle.succeed()
             return result
 

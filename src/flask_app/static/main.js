@@ -57,38 +57,58 @@ document.getElementById("btn-analyze").addEventListener("click", () => {
   addLog("INFO", `이미지 분석 요청 전송 (${GRID_W}×${GRID_H})`);
 });
 
-// ── 격자 클릭 편집 ──
+// ── 격자 드래그 편집 ──
 
 const canvas = document.getElementById("grid-canvas");
+let painting = false;
+let paintButton = -1;
+let lastPaintedCell = null;
 
-canvas.addEventListener("click", (e) => {
-  if (!currentGrid) return;
+function getCellFromEvent(e) {
   const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
   const cs = Math.floor(canvas.width / GRID_W);
-  const col = Math.floor((e.clientX - rect.left) / cs);
-  const row = Math.floor((e.clientY - rect.top) / cs);
-  if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return;
+  const col = Math.floor((e.clientX - rect.left) * scaleX / cs);
+  const row = Math.floor((e.clientY - rect.top) * scaleY / cs);
+  if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return null;
+  return { row, col };
+}
 
-  currentGrid[row][col] = selectedColor;
-  currentBlockMap = null;
-  drawGrid(currentGrid);
-  addLog("INFO", `셀 (${row},${col}) → ${selectedColor}`);
-});
+function paintCell(cell, button) {
+  if (!cell || !currentGrid) return;
+  if (lastPaintedCell && lastPaintedCell.row === cell.row && lastPaintedCell.col === cell.col) return;
+  lastPaintedCell = cell;
 
-canvas.addEventListener("contextmenu", (e) => {
+  if (button === 2) {
+    currentGrid[cell.row][cell.col] = "";
+    currentBlockMap = null;
+    drawGrid(currentGrid);
+  } else {
+    currentGrid[cell.row][cell.col] = selectedColor;
+    currentBlockMap = null;
+    drawGrid(currentGrid);
+  }
+}
+
+canvas.addEventListener("mousedown", (e) => {
+  if (!currentGrid) return;
   e.preventDefault();
-  if (!currentGrid) return;
-  const rect = canvas.getBoundingClientRect();
-  const cs = Math.floor(canvas.width / GRID_W);
-  const col = Math.floor((e.clientX - rect.left) / cs);
-  const row = Math.floor((e.clientY - rect.top) / cs);
-  if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return;
-
-  currentGrid[row][col] = "";
-  currentBlockMap = null;
-  drawGrid(currentGrid);
-  addLog("INFO", `셀 (${row},${col}) 비움`);
+  painting = true;
+  paintButton = e.button;
+  lastPaintedCell = null;
+  paintCell(getCellFromEvent(e), e.button);
 });
+
+canvas.addEventListener("mousemove", (e) => {
+  if (!painting) return;
+  paintCell(getCellFromEvent(e), paintButton);
+});
+
+canvas.addEventListener("mouseup", () => { painting = false; });
+canvas.addEventListener("mouseleave", () => { painting = false; });
+
+canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); });
 
 // ── 수정 반영 ──
 
