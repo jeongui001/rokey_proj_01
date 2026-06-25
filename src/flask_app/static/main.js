@@ -6,7 +6,8 @@ const COLOR_HEX = {
 };
 
 let currentGrid = null;
-let gridSize = 16;
+const GRID_W = 24;
+const GRID_H = 10;
 let selectedColor = "red";
 
 // ── 색상 팔레트 생성 ──
@@ -46,11 +47,8 @@ fileInput.addEventListener("change", (e) => {
 
 document.getElementById("btn-analyze").addEventListener("click", () => {
   if (!preview.src) return;
-  gridSize = parseInt(document.getElementById("grid-size").value);
   socket.emit("upload_image", {
     image_data: preview.src,
-    grid_size: gridSize,
-    owned_colors: [],
   });
   addLog("INFO", "이미지 분석 요청 전송");
 });
@@ -62,11 +60,10 @@ const canvas = document.getElementById("grid-canvas");
 canvas.addEventListener("click", (e) => {
   if (!currentGrid) return;
   const rect = canvas.getBoundingClientRect();
-  const sz = currentGrid.length;
-  const cs = Math.floor(320 / sz);
+  const cs = Math.floor(canvas.width / GRID_W);
   const col = Math.floor((e.clientX - rect.left) / cs);
   const row = Math.floor((e.clientY - rect.top) / cs);
-  if (row < 0 || row >= sz || col < 0 || col >= sz) return;
+  if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return;
 
   currentGrid[row][col] = selectedColor;
   drawGrid(currentGrid);
@@ -77,11 +74,10 @@ canvas.addEventListener("contextmenu", (e) => {
   e.preventDefault();
   if (!currentGrid) return;
   const rect = canvas.getBoundingClientRect();
-  const sz = currentGrid.length;
-  const cs = Math.floor(320 / sz);
+  const cs = Math.floor(canvas.width / GRID_W);
   const col = Math.floor((e.clientX - rect.left) / cs);
   const row = Math.floor((e.clientY - rect.top) / cs);
-  if (row < 0 || row >= sz || col < 0 || col >= sz) return;
+  if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return;
 
   currentGrid[row][col] = "";
   drawGrid(currentGrid);
@@ -104,7 +100,6 @@ document.getElementById("btn-start").addEventListener("click", () => {
   if (!currentGrid) return;
   socket.emit("start_assembly", {
     grid_json: JSON.stringify(currentGrid),
-    grid_size: gridSize,
   });
   addLog("INFO", "조립 시작 요청");
 });
@@ -118,7 +113,11 @@ document.getElementById("btn-resume").addEventListener("click", () => socket.emi
 
 socket.on("analysis_result", (data) => {
   if (data.success) {
-    currentGrid = JSON.parse(data.grid_json);
+    const flat = JSON.parse(data.grid_json);
+    currentGrid = [];
+    for (let r = 0; r < GRID_H; r++) {
+      currentGrid.push(flat.slice(r * GRID_W, (r + 1) * GRID_W));
+    }
     drawGrid(currentGrid);
     document.getElementById("section-result").classList.remove("hidden");
     addLog("INFO", "이미지 분석 완료");
@@ -169,12 +168,13 @@ socket.on("assembly_error", (data) => {
 
 function drawGrid(grid) {
   const ctx = canvas.getContext("2d");
-  const sz = grid.length;
-  const cs = Math.floor(320 / sz);
+  const cs = Math.floor(canvas.width / GRID_W);
+  const h = cs * GRID_H;
+  canvas.height = h;
   ctx.fillStyle = "#0d1117";
-  ctx.fillRect(0, 0, 320, 320);
-  for (let r = 0; r < sz; r++) {
-    for (let c = 0; c < sz; c++) {
+  ctx.fillRect(0, 0, canvas.width, h);
+  for (let r = 0; r < GRID_H; r++) {
+    for (let c = 0; c < GRID_W; c++) {
       ctx.fillStyle = COLOR_HEX[grid[r][c]] || "#333";
       ctx.fillRect(c * cs + 1, r * cs + 1, cs - 2, cs - 2);
     }

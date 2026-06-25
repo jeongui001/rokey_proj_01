@@ -6,7 +6,6 @@ ROS2 Action Server(/execute_queue)를 통해 외부 Goal을 수신한다.
 
 from __future__ import annotations
 
-import json
 import math
 import time
 from dataclasses import dataclass
@@ -291,20 +290,7 @@ class RobotMotionController:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. task_type 정수 → 문자열 변환
-# ─────────────────────────────────────────────────────────────────────────────
-
-def task_type_to_string(task_type: int) -> str:
-    from cobot1_interfaces.msg import AssemblyTask
-    if task_type == AssemblyTask.PICK_PLACE:
-        return "PICK_PLACE"
-    if task_type == AssemblyTask.DETACH_DISCARD:
-        return "DETACH_DISCARD"
-    raise ValueError(f"지원하지 않는 task_type: {task_type}")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 9. RobotControllerNode — Action Server 통합
+# 8. RobotControllerNode — Action Server 통합
 # ─────────────────────────────────────────────────────────────────────────────
 
 class RobotControllerNode(Node):
@@ -318,6 +304,12 @@ class RobotControllerNode(Node):
 
         self._action_callback_group = ReentrantCallbackGroup()
         self._motion_controller = RobotMotionController(self)
+
+        # BlockTask → PickPlaceTask 변환에 사용하는 파라미터
+        self.declare_parameter("fixed_x", 332.0)
+        self.declare_parameter("place_z", 0.0)
+        self.declare_parameter("place_orientation", [0.0, 0.0, 0.0])
+        self.declare_parameter("pick_pose", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
         from cobot1_interfaces.action import Assembly
         self._action_server = ActionServer(
@@ -337,8 +329,6 @@ class RobotControllerNode(Node):
         return CancelResponse.ACCEPT
 
     def goal_callback(self, goal_request) -> GoalResponse:
-        from cobot1_interfaces.msg import AssemblyTask
-
         with self._busy_lock:
             if self._busy:
                 self.get_logger().warn("이미 Queue 실행 중 — Goal 거부")
@@ -350,33 +340,17 @@ class RobotControllerNode(Node):
                 return GoalResponse.REJECT
 
             for t in tasks:
-                if t.task_type not in (
-                    AssemblyTask.PICK_PLACE,
-                    AssemblyTask.DETACH_DISCARD,
-                ):
+                if t.block_type not in (1, 2):
                     self.get_logger().warn(
-                        f"지원하지 않는 task_type={t.task_type} — Goal 거부"
+                        f"유효하지 않은 block_type={t.block_type} — Goal 거부"
                     )
                     return GoalResponse.REJECT
 
-                if len(t.source_pose) != 6 or len(t.target_pose) != 6:
+                if math.isnan(t.y_position) or math.isinf(t.y_position):
                     self.get_logger().warn(
-                        f"Pose 배열 길이 오류: task_id={t.task_id} — Goal 거부"
+                        "y_position에 NaN/Inf 포함 — Goal 거부"
                     )
                     return GoalResponse.REJECT
-
-                if t.task_type == AssemblyTask.PICK_PLACE and t.stack_index < 0:
-                    self.get_logger().warn(
-                        f"stack_index 음수: task_id={t.task_id} — Goal 거부"
-                    )
-                    return GoalResponse.REJECT
-
-                for v in list(t.source_pose) + list(t.target_pose):
-                    if math.isnan(v) or math.isinf(v):
-                        self.get_logger().warn(
-                            f"Pose에 NaN/Inf 포함: task_id={t.task_id} — Goal 거부"
-                        )
-                        return GoalResponse.REJECT
 
             self._busy = True
             return GoalResponse.ACCEPT
@@ -386,167 +360,78 @@ class RobotControllerNode(Node):
         goal_handle,
         *,
         current_index: int,
-        total_count: int,
-        task_id: str,
-        task_type: str,
-        color: str,
-        step: str,
-        progress: float,
     ) -> None:
         from cobot1_interfaces.action import Assembly
 
         feedback = Assembly.Feedback()
-        feedback.progress = float(max(0.0, min(1.0, progress)))
         feedback.current_index = int(current_index)
-        feedback.total_count = int(total_count)
-        feedback.task_id = task_id
-        feedback.task_type = task_type
-        feedback.color = color
-        feedback.step = step
-
-        try:
-            record = {
-                "task_id": task_id,
-                "task_type": task_type,
-                "color": color,
-                "queue_index": current_index,
-                "total_count": total_count,
-                "step": step,
-                "progress": float(progress),
-            }
-            feedback.db_record_json = json.dumps(record, ensure_ascii=False)
-        except Exception:
-            feedback.db_record_json = "{}"
-
         goal_handle.publish_feedback(feedback)
 
     def execute_callback(self, goal_handle):
         from cobot1_interfaces.action import Assembly
-        from cobot1_interfaces.msg import AssemblyTask
-        from .spiral_detach_discard import DetachDiscardTask, execute_detach_discard
 
         result = Assembly.Result()
-        result.success = False
-        result.completed_steps = 0
         result.failed_step = -1
         result.error_message = ''
         current_index = -1
 
         try:
             tasks = goal_handle.request.tasks
-            total_count = len(tasks)
 
-            self.publish_feedback(
-                goal_handle,
-                current_index=0,
-                total_count=total_count,
-                task_id="",
-                task_type="",
-                color="",
-                step="QUEUE_START",
-                progress=0.0,
-            )
+            fixed_x = self.get_parameter("fixed_x").value
+            place_z = self.get_parameter("place_z").value
+            place_orient = self.get_parameter("place_orientation").value
+            pick_pose_values = self.get_parameter("pick_pose").value
 
-            self.publish_feedback(
-                goal_handle,
-                current_index=0,
-                total_count=total_count,
-                task_id="",
-                task_type="",
-                color="",
-                step="HOME",
-                progress=0.0,
-            )
+            pick_pose = pose_from_array(pick_pose_values)
+
             self._motion_controller.move_home()
 
             for current_index, task_msg in enumerate(tasks):
                 if goal_handle.is_cancel_requested:
-                    result.completed_steps = current_index
+                    result.failed_step = current_index
                     result.error_message = '사용자에 의해 취소됨'
                     goal_handle.canceled()
                     return result
 
-                type_str = task_type_to_string(task_msg.task_type)
+                base_place_pose = CartesianPose(
+                    x_mm=fixed_x,
+                    y_mm=task_msg.y_position,
+                    z_mm=place_z,
+                    a_deg=place_orient[0],
+                    b_deg=place_orient[1],
+                    c_deg=place_orient[2],
+                )
+
+                pick_task = PickPlaceTask(
+                    task_id=f"block_{current_index}",
+                    color=task_msg.color,
+                    pick_pose=pick_pose,
+                    base_place_pose=base_place_pose,
+                    stack_index=0,
+                )
 
                 def _step_cb(
                     step_name: str,
                     _idx: int = current_index,
-                    _tid: str = task_msg.task_id,
-                    _ttype: str = type_str,
-                    _color: str = task_msg.color,
                 ) -> None:
                     self.publish_feedback(
                         goal_handle,
                         current_index=_idx,
-                        total_count=total_count,
-                        task_id=_tid,
-                        task_type=_ttype,
-                        color=_color,
-                        step=step_name,
-                        progress=_idx / total_count,
                     )
 
-                if task_msg.task_type == AssemblyTask.PICK_PLACE:
-                    pick_task = PickPlaceTask(
-                        task_id=task_msg.task_id,
-                        color=task_msg.color,
-                        pick_pose=pose_from_array(task_msg.source_pose),
-                        base_place_pose=pose_from_array(task_msg.target_pose),
-                        stack_index=task_msg.stack_index,
-                    )
-                    self._motion_controller.execute_pick_place(
-                        pick_task,
-                        step_callback=_step_cb,
-                    )
-                else:  # DETACH_DISCARD
-                    detach_task = DetachDiscardTask(
-                        task_id=task_msg.task_id,
-                        color=task_msg.color,
-                        detach_pose=pose_from_array(task_msg.source_pose),
-                        basket_pose=pose_from_array(task_msg.target_pose),
-                    )
-                    execute_detach_discard(
-                        self._motion_controller,
-                        detach_task,
-                        step_callback=_step_cb,
-                    )
+                self._motion_controller.execute_pick_place(
+                    pick_task,
+                    step_callback=_step_cb,
+                )
 
                 self.publish_feedback(
                     goal_handle,
                     current_index=current_index,
-                    total_count=total_count,
-                    task_id=task_msg.task_id,
-                    task_type=type_str,
-                    color=task_msg.color,
-                    step="TASK_COMPLETE",
-                    progress=(current_index + 1) / total_count,
                 )
 
-            self.publish_feedback(
-                goal_handle,
-                current_index=total_count - 1,
-                total_count=total_count,
-                task_id="",
-                task_type="",
-                color="",
-                step="HOME",
-                progress=1.0,
-            )
             self._motion_controller.move_home()
 
-            self.publish_feedback(
-                goal_handle,
-                current_index=total_count - 1,
-                total_count=total_count,
-                task_id="",
-                task_type="",
-                color="",
-                step="QUEUE_COMPLETE",
-                progress=1.0,
-            )
-
-            result.success = True
-            result.completed_steps = total_count
             goal_handle.succeed()
             return result
 
@@ -563,7 +448,7 @@ class RobotControllerNode(Node):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 10. 실행 함수
+# 9. 실행 함수
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main(args=None) -> None:

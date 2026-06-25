@@ -15,14 +15,6 @@
   <input type="file" id="file-input" accept="image/*">
   <img id="preview" alt="미리보기">
   <div class="row">
-    <label>격자 크기
-      <select id="grid-size">
-        <option value="8">8 &times; 8</option>
-        <option value="16" selected>16 &times; 16</option>
-        <option value="24">24 &times; 24</option>
-        <option value="32">32 &times; 32</option>
-      </select>
-    </label>
     <button id="btn-analyze" disabled>분석 요청</button>
   </div>
 </section>
@@ -32,7 +24,7 @@
   <h2>2. 분석 결과 편집</h2>
   <p class="hint">셀 클릭 → 색상 변경 / 우클릭 → 비우기</p>
   <div id="color-palette"></div>
-  <canvas id="grid-canvas" width="320" height="320"></canvas>
+  <canvas id="grid-canvas" width="480" height="200"></canvas>
   <div class="row">
     <button id="btn-update">수정 반영</button>
     <button id="btn-start">조립 시작</button>

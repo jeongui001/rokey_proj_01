@@ -1,7 +1,4 @@
-string grid_json
-int32 grid_size
-cobot1_interfaces/BlockModel model
+string[] colors
 ---
-bool success
-cobot1_interfaces/AssemblyTask[] tasks
 string error_message
+cobot1_interfaces/BlockTask[] tasks

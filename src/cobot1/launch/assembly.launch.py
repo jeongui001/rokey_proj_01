@@ -5,18 +5,14 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
     pkg_share = get_package_share_directory('cobot1')
     default_vision_config = os.path.join(pkg_share, 'config', 'vision.yaml')
     image_params = os.path.join(pkg_share, 'config', 'image_processor.yaml')
-    verify_params = os.path.join(pkg_share, 'config', 'verify.yaml')
-
     return LaunchDescription([
         DeclareLaunchArgument('vision_config_file', default_value=default_vision_config),
-        DeclareLaunchArgument('calibration_ready', default_value='false'),
 
         Node(
             package='cobot1',
@@ -33,9 +29,6 @@ def generate_launch_description():
                 image_params,
                 {
                     'vision_config_file': LaunchConfiguration('vision_config_file'),
-                    'calibration_ready': ParameterValue(
-                        LaunchConfiguration('calibration_ready'), value_type=bool
-                    ),
                 },
             ],
         ),
@@ -56,12 +49,6 @@ def generate_launch_description():
             executable='verify_node',
             name='verify',
             output='screen',
-            parameters=[
-                verify_params,
-                {
-                    'vision_config_file': LaunchConfiguration('vision_config_file'),
-                },
-            ],
         ),
         Node(
             package='cobot1',

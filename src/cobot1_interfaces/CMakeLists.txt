@@ -10,14 +10,10 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/BlockCell.msg"
-  "msg/BlockModel.msg"
-  "msg/SegmentationInstance.msg"
-  "msg/Mismatch.msg"
   "msg/WebcamError.msg"
-  "msg/AssemblyTask.msg"
+  "msg/ExpectedModel.msg"
+  "msg/BlockTask.msg"
   "srv/ProcessMosaic.srv"
-  "srv/VerifyAssembly.srv"
   "srv/SequencePlan.srv"
   "action/Assembly.action"
   DEPENDENCIES builtin_interfaces std_msgs sensor_msgs geometry_msgs

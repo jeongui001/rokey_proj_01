@@ -1,28 +1,5 @@
-# Source image to segment and convert into an N x N block mosaic.
 sensor_msgs/Image input_image
-uint32 grid_size
-
-# 0 uses the configured default size.
-uint32 output_width
-uint32 output_height
-
-# Supported values: "x" or "y". Empty uses the configured default.
-string fixed_axis
-float64 fixed_axis_value
-
-# true: use CameraInfo + TF and return base-frame target coordinates.
-# false: return segmentation/mosaic only and set target coordinates to NaN.
-bool compute_robot_coordinates
 ---
 bool success
 string message
-
-# Image after centre-crop/letterbox/stretch fitting, i.e. the image actually segmented.
-sensor_msgs/Image fitted_image
-
-# Instance masks, contours, boxes, IDs and labels drawn on fitted_image.
-sensor_msgs/Image segmentation_overlay
-
-# N x N rendered block mosaic.
-sensor_msgs/Image mosaic_image
-cobot1_interfaces/BlockModel model
+string[] colors

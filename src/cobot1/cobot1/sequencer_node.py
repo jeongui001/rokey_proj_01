@@ -1,10 +1,8 @@
-import json
-
 import rclpy
 from rclpy.node import Node
 
 from cobot1_interfaces.srv import SequencePlan
-from cobot1_interfaces.msg import AssemblyTask
+from cobot1_interfaces.msg import BlockTask
 
 
 class SequencerNode(Node):
@@ -12,15 +10,15 @@ class SequencerNode(Node):
     def __init__(self):
         super().__init__('sequencer')
 
-        # 배치 좌표 파라미터 (나중에 실측값으로 교체)
-        self.declare_parameter('start_y', 0.0)       # n1: 시작 y좌표
-        self.declare_parameter('start_z', 0.0)       # n2: 시작 z좌표
-        self.declare_parameter('cell_step', 0.025)    # n3: 셀 간 거리 (y축 방향)
-        self.declare_parameter('fixed_x', 0.5)        # x축 고정값 (벽면 거리)
-        # Place 자세 회전값 [a_deg, b_deg, c_deg] (Doosan Z-Y-Z Euler)
-        self.declare_parameter('place_orientation', [0.0, 0.0, 0.0])
-        # Pick 스테이션 좌표 [x, y, z, a, b, c] (블록 공급 위치)
-        self.declare_parameter('pick_pose', [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        # 그리드 크기 파라미터
+        self.declare_parameter('grid_width', 24)
+        self.declare_parameter('grid_height', 10)
+
+        # 배치 좌표 파라미터
+        self.declare_parameter('start_x', 332.0)
+        self.declare_parameter('start_y_type1', 310.0)
+        self.declare_parameter('start_y_type2', 302.05)
+        self.declare_parameter('cell_pitch', 15.9)
 
         self.srv = self.create_service(
             SequencePlan, '/sequence/plan', self.handle_plan)
@@ -28,71 +26,61 @@ class SequencerNode(Node):
         self.get_logger().info('Sequencer 노드 시작')
 
     def handle_plan(self, request, response):
-        """grid_json을 받아 지그재그(boustrophedon) 순서의 AssemblyTask 배열을 생성.
+        """colors 배열을 받아 지그재그(boustrophedon) 순서의 BlockTask 배열을 생성.
 
         배치 규칙:
-        - 이미지 좌하단(row=N-1, col=0)부터 시작
-        - 한 행을 좌→우로 채운 뒤, 다음 행은 우→좌 (시간 단축)
-        - col 방향 → 현실 y축 (좌→우: y 감소, 우→좌: y 증가)
-        - row 방향 → 현실 z축 (아래→위)
+        - request.colors: grid_height × grid_width 크기의 row-major flat 배열
+        - 아래 행부터 위로, 지그재그 순서로 순회
+        - 빈 문자열('')인 셀은 건너뜀
         """
+        grid_width = self.get_parameter('grid_width').value
+        grid_height = self.get_parameter('grid_height').value
+
         self.get_logger().info(
-            f'배치 계획 요청: grid_size={request.grid_size}')
+            f'배치 계획 요청: {grid_width}x{grid_height} 그리드')
 
         try:
-            grid = json.loads(request.grid_json)
-            grid_size = request.grid_size
-
-            if len(grid) != grid_size:
+            expected = grid_width * grid_height
+            if len(request.colors) != expected:
                 raise ValueError(
-                    f'grid_json 행 수({len(grid)})가 grid_size({grid_size})와 불일치')
+                    f'colors 길이({len(request.colors)})가 '
+                    f'grid 크기({expected})와 불일치')
 
-            # 파라미터 읽기
-            start_y = self.get_parameter('start_y').value
-            start_z = self.get_parameter('start_z').value
-            cell_step = self.get_parameter('cell_step').value
-            fixed_x = self.get_parameter('fixed_x').value
-            place_orient = list(self.get_parameter('place_orientation').value)
-            pick_pose = list(self.get_parameter('pick_pose').value)
+            # flat 배열을 2D 그리드로 변환 (row-major)
+            grid = []
+            for r in range(grid_height):
+                row = request.colors[r * grid_width:(r + 1) * grid_width]
+                grid.append(row)
 
             tasks = []
-            step = 0
+            count = 0
 
-            # 아래→위 순서 (row N-1 → row 0)
-            for layer, row in enumerate(range(grid_size - 1, -1, -1)):
+            # 아래→위 순서 (row grid_height-1 → row 0), 지그재그
+            for layer, row in enumerate(range(grid_height - 1, -1, -1)):
                 if layer % 2 == 0:
-                    cols = range(grid_size)
+                    cols = range(grid_width)
                 else:
-                    cols = range(grid_size - 1, -1, -1)
+                    cols = range(grid_width - 1, -1, -1)
 
                 for col in cols:
                     color = grid[row][col]
                     if not color:
                         continue
 
-                    y = start_y - col * cell_step
-                    row_from_bottom = grid_size - 1 - row
-                    z = start_z + row_from_bottom * cell_step
-
-                    task = AssemblyTask()
-                    task.task_type = AssemblyTask.PICK_PLACE
-                    task.task_id = f'place_{step}'
+                    task = BlockTask()
                     task.color = color
-                    task.source_pose = pick_pose
-                    task.target_pose = [fixed_x, y, z] + place_orient
-                    task.stack_index = 0
+                    task.block_type = 1  # placeholder
+                    task.y_position = 0.0  # placeholder
 
                     tasks.append(task)
-                    step += 1
+                    count += 1
 
-            response.success = True
             response.tasks = tasks
             response.error_message = ''
             self.get_logger().info(
-                f'배치 계획 완료: {step}개 블록, {grid_size}행 지그재그')
+                f'배치 계획 완료: {count}개 블록, 지그재그 순서')
 
         except Exception as e:
-            response.success = False
             response.tasks = []
             response.error_message = str(e)
             self.get_logger().error(f'배치 계획 실패: {e}')
