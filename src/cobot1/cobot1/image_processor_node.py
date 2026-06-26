@@ -13,15 +13,7 @@ from sensor_msgs.msg import Image
 
 from cobot1.vision_core.config import load_vision_config
 from cobot1.vision_core.grid_projection import merge_blocks, quantize_image_to_grid
-from cobot1.vision_core.mosaic import (
-    DEFAULT_CELL_ASPECT_HEIGHT,
-    DEFAULT_CELL_ASPECT_WIDTH,
-    DEFAULT_GRID_COLS,
-    DEFAULT_GRID_ROWS,
-    fit_image,
-    preview_size_for_cell_aspect,
-    render_cells,
-)
+from cobot1.vision_core.mosaic import fit_image, preview_size_for_cell_aspect, render_cells
 from cobot1.vision_core.overlay import draw_grid_overlay
 from cobot1.vision_core.palette import Palette
 from cobot1_interfaces.srv import ProcessMosaic
@@ -33,7 +25,7 @@ MOSAIC_TOPIC = '/vision/mosaic'
 DEFAULT_GRID_ROWS = 8
 DEFAULT_GRID_COLS = 16
 CELL_ASPECT_WIDTH = 15.9
-CELL_ASPECT_HEIGHT = 38.0
+CELL_ASPECT_HEIGHT = 19.0
 
 
 class ImageProcessorNode(Node):
@@ -44,28 +36,18 @@ class ImageProcessorNode(Node):
         self._callback_group = ReentrantCallbackGroup()
         self._bridge = CvBridge()
 
-
-        config_file = str(self.get_parameter('vision_config_file').value).strip()
-        if not config_file:
-            config_file = os.path.join(
-                get_package_share_directory('cobot1'), 'config', 'vision.yaml'
-            )
+        config_file = os.path.join(
+            get_package_share_directory('cobot1'), 'config', 'vision.yaml')
         self._config = load_vision_config(config_file)
         self._palette = Palette.from_config(self._config)
         self._projection_config = dict(self._config.get('grid_projection', {}))
 
-        self._fitted_publisher = self.create_publisher(
-            Image, str(self.get_parameter('fitted_topic').value), 1
-        )
-        self._overlay_publisher = self.create_publisher(
-            Image, str(self.get_parameter('overlay_topic').value), 1
-        )
-        self._mosaic_publisher = self.create_publisher(
-            Image, str(self.get_parameter('mosaic_topic').value), 1
-        )
+        self._fitted_publisher = self.create_publisher(Image, FITTED_TOPIC, 1)
+        self._overlay_publisher = self.create_publisher(Image, OVERLAY_TOPIC, 1)
+        self._mosaic_publisher = self.create_publisher(Image, MOSAIC_TOPIC, 1)
         self._service = self.create_service(
             ProcessMosaic,
-            str(self.get_parameter('service_name').value),
+            SERVICE_NAME,
             self._process_request,
             callback_group=self._callback_group,
         )
@@ -149,7 +131,7 @@ class ImageProcessorNode(Node):
             response.message = (
                 f'Palette-quantized {grid_cols}x{grid_rows} grid with '
                 f'{sum(1 for cell in cells if cell.occupied)} occupied cells and '
-                f'{len(blocks)} merged block candidates; '
+                f'{len(blocks)} merged block candidates.'
             )
             response.colors = [cell.color if cell.occupied else 'empty' for cell in cells]
 
