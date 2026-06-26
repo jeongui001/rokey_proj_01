@@ -1,9 +1,0 @@
-[console_scripts]
-bridge_node = cobot1.bridge_node:main
-camera_node = cobot1.camera_node:main
-image_processor_node = cobot1.image_processor_node:main
-robot_controller_node = cobot1.robot_controller_node:main
-sequencer_node = cobot1.sequencer_node:main
-verify_node = cobot1.verify_node:main
-webcam_node = cobot1.webcam_node:main
-

@@ -1,6 +1,0 @@
-cobot1_interfaces/BlockTask[] tasks
----
-int32 failed_step
-string error_message
----
-int32 current_index
