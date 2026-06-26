@@ -1,1 +1,0 @@
-/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_typesupport_introspection_c/cobot1_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h

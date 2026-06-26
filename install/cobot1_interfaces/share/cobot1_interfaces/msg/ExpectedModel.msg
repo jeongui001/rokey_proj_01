@@ -1,1 +1,0 @@
-/home/youngjin/rokey_proj_01/src/cobot1_interfaces/msg/ExpectedModel.msg
