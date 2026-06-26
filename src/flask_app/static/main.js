@@ -6,8 +6,8 @@ const COLOR_HEX = {
 
 let currentGrid = null;
 let currentBlockMap = null;
-let GRID_W = 10;
-let GRID_H = 10;
+let GRID_W = 16;
+let GRID_H = 8;
 let selectedColor = "red";
 
 // ── 색상 팔레트 생성 ──
@@ -47,8 +47,8 @@ fileInput.addEventListener("change", (e) => {
 
 document.getElementById("btn-analyze").addEventListener("click", () => {
   if (!preview.src) return;
-  GRID_W = parseInt(document.getElementById("input-cols").value) || 10;
-  GRID_H = parseInt(document.getElementById("input-rows").value) || 10;
+  GRID_W = parseInt(document.getElementById("input-cols").value) || 16;
+  GRID_H = parseInt(document.getElementById("input-rows").value) || 8;
   socket.emit("upload_image", {
     image_data: preview.src,
     grid_rows: GRID_H,

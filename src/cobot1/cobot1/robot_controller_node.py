@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass
-from threading import Lock
+from threading import Event, Lock
 from typing import Callable, List, Optional
 
 import rclpy
@@ -21,6 +21,7 @@ from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
+from std_srvs.srv import SetBool
 import DR_init
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -543,6 +544,7 @@ class RobotMotionController:
             )
 
         def _step(name: str) -> None:
+            self._node._pause_event.wait()
             self._logger.info(f"[color={task.color}] 단계: {name}")
             if step_callback is not None:
                 step_callback(name)
@@ -599,6 +601,7 @@ class RobotMotionController:
           RETURN_PLACE_OVERHEAD — Place 상부 Pose로 복귀 (Home 이동 없음)
         """
         def _step(name: str) -> None:
+            self._node._pause_event.wait()
             self._logger.info(f"[color={task.color}] 단계: {name}")
             if step_callback is not None:
                 step_callback(name)
@@ -709,6 +712,8 @@ class RobotControllerNode(Node):
 
         self._busy_lock = Lock()
         self._busy = False
+        self._pause_event = Event()
+        self._pause_event.set()
         self._action_callback_group = ReentrantCallbackGroup()
         self._motion_controller = RobotMotionController(self)
 
@@ -722,11 +727,24 @@ class RobotControllerNode(Node):
             cancel_callback=self.cancel_callback,
             callback_group=self._action_callback_group,
         )
+        self.create_service(SetBool, '/robot/pause', self._on_pause_request,
+                            callback_group=self._action_callback_group)
 
         self.get_logger().info(f"Action Server 시작: {ACTION_NAME}")
 
+    def _on_pause_request(self, request, response):
+        if request.data:
+            self._pause_event.clear()
+            self.get_logger().info("일시정지")
+        else:
+            self._pause_event.set()
+            self.get_logger().info("재개")
+        response.success = True
+        return response
+
     def cancel_callback(self, _goal_handle) -> CancelResponse:
         """취소 요청을 항상 수락한다. 실제 중단은 execute_callback 루프에서 처리."""
+        self._pause_event.set()  # pause 상태에서 cancel 시 wait() 해제
         self.get_logger().info("액션 취소 요청 수신")
         return CancelResponse.ACCEPT
 
@@ -810,6 +828,8 @@ class RobotControllerNode(Node):
             stack_counter: dict = {}
 
             for current_index, task_msg in enumerate(tasks):
+                self._pause_event.wait()
+
                 if goal_handle.is_cancel_requested:
                     result.error_message = '사용자에 의해 취소됨'
                     goal_handle.canceled()
@@ -877,12 +897,12 @@ class RobotControllerNode(Node):
 def main(args=None) -> None:
     """
     ROS2를 초기화하고 RobotControllerNode를 실행한다.
-    MultiThreadedExecutor(2스레드): execute 스레드와 goal/cancel 콜백 스레드를 분리한다.
+    MultiThreadedExecutor(3스레드): execute 스레드 / goal·cancel 콜백 스레드 / 서비스 콜백 스레드를 분리한다.
     """
     rclpy.init(args=args)
 
     node = RobotControllerNode()
-    executor = MultiThreadedExecutor(num_threads=2)
+    executor = MultiThreadedExecutor(num_threads=3)
     executor.add_node(node)
 
     try:

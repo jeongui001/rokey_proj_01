@@ -1,1 +1,0 @@
-/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_cpp/cobot1_interfaces/srv/detail/sequence_plan__builder.hpp

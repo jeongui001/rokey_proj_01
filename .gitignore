@@ -24,9 +24,9 @@ sequence.md
 gear_insert.py
 
 # ROS2 build directories
-ros2_ws/build/
-ros2_ws/install/
-ros2_ws/log/
+build/
+install/
+log/
 
 # docs
 docs/superpowers

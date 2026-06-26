@@ -11,6 +11,7 @@ from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 import socketio
 from cv_bridge import CvBridge
 
+from std_srvs.srv import SetBool
 from cobot1_interfaces.srv import ProcessMosaic, SequencePlan
 from cobot1_interfaces.action import Assembly
 from cobot1_interfaces.msg import ExpectedModel, WebcamError
@@ -68,8 +69,8 @@ class BridgeNode(Node):
                 self._bridge.get_logger().info('이미지 분석 요청 수신')
                 cv_image = self._decode_image(data.get('image_data', ''))
                 self._bridge._current_image_data = data
-                self._bridge._grid_rows = int(data.get('grid_rows', 10))
-                self._bridge._grid_cols = int(data.get('grid_cols', 10))
+                self._bridge._grid_rows = int(data.get('grid_rows', 8))
+                self._bridge._grid_cols = int(data.get('grid_cols', 16))
                 self._bridge.handle_analyze(cv_image)
 
             @self._sio.on('update_grid', namespace='/bridge')
@@ -88,10 +89,16 @@ class BridgeNode(Node):
             @self._sio.on('pause', namespace='/bridge')
             def on_pause():
                 self._bridge.get_logger().info('일시정지 요청')
+                req = SetBool.Request()
+                req.data = True
+                self._bridge.pause_client.call_async(req)
 
             @self._sio.on('resume', namespace='/bridge')
             def on_resume():
                 self._bridge.get_logger().info('재개 요청')
+                req = SetBool.Request()
+                req.data = False
+                self._bridge.pause_client.call_async(req)
 
         # ── base64 → OpenCV 변환 ──
 
@@ -106,7 +113,7 @@ class BridgeNode(Node):
         # ── Bridge → Flask 송신 ──
 
         def send_analysis_result(self, success, colors_json='', error_message='',
-                                   grid_rows=10, grid_cols=10):
+                                   grid_rows=8, grid_cols=16):
             self._sio.emit('analysis_result', {
                 'success': success,
                 'grid_json': colors_json,
@@ -147,6 +154,7 @@ class BridgeNode(Node):
         # ROS2 서비스 클라이언트
         self.image_client = self.create_client(ProcessMosaic, '/image/analyze')
         self.sequence_client = self.create_client(SequencePlan, '/sequence/plan')
+        self.pause_client = self.create_client(SetBool, '/robot/pause')
 
         # ROS2 액션 클라이언트
         self.robot_action_client = ActionClient(self, Assembly, '/execute_queue')
@@ -168,8 +176,8 @@ class BridgeNode(Node):
         self._current_image_data = None
         self._goal_handle = None
         self._current_tasks = []
-        self._grid_rows = 10
-        self._grid_cols = 10
+        self._grid_rows = 8
+        self._grid_cols = 16
 
         # Flask 연결
         self._flask = self._FlaskClient(self)

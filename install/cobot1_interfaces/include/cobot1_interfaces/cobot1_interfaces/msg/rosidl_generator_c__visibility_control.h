@@ -1,1 +1,0 @@
-/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_c/cobot1_interfaces/msg/rosidl_generator_c__visibility_control.h

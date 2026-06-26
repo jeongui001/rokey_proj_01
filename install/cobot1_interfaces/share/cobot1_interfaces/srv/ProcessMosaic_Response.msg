@@ -1,1 +1,0 @@
-/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_cmake/srv/ProcessMosaic_Response.msg

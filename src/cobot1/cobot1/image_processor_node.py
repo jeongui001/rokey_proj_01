@@ -22,8 +22,8 @@ SERVICE_NAME = '/image/analyze'
 FITTED_TOPIC = '/vision/source/fitted'
 OVERLAY_TOPIC = '/vision/source/overlay'
 MOSAIC_TOPIC = '/vision/mosaic'
-DEFAULT_GRID_ROWS = 10
-DEFAULT_GRID_COLS = 10
+DEFAULT_GRID_ROWS = 8
+DEFAULT_GRID_COLS = 16
 CELL_ASPECT_WIDTH = 15.9
 CELL_ASPECT_HEIGHT = 38.0
 

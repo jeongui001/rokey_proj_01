@@ -42,8 +42,8 @@ def _palette_lab(palette: Palette, empty_palette_name: str) -> dict[str, np.ndar
 def quantize_image_to_grid(
     image_bgr: np.ndarray,
     palette: Palette,
-    grid_rows: int = 10,
-    grid_cols: int = 10,
+    grid_rows: int = 8,
+    grid_cols: int = 16,
     config: dict | None = None,
 ) -> tuple[np.ndarray, list[CellSample]]:
     validate_bgr_image(image_bgr)
