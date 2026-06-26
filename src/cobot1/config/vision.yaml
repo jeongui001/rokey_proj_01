@@ -1,7 +1,6 @@
-# Shared configuration for the palette-based image mosaic pipeline.
+# Shared configuration for the color-mask image mosaic pipeline.
 
 palette:
-  confidence_scale: 45.0
   entries:
     - {name: red,    rgb: [220, 35, 35],   occupied: true}
     - {name: blue,   rgb: [35, 80, 220],   occupied: true}
@@ -10,14 +9,14 @@ palette:
     - {name: empty,  rgb: [95, 95, 95],    occupied: false}
 
 mosaic:
-  fit_mode: center_crop       # center_crop | letterbox | stretch
+  fit_mode: smart_crop        # center_crop | smart_crop
+  smart_crop_min_scale: 0.80
   default_output_height: 512
   max_grid_size: 32
   draw_grid: true
   grid_line_thickness: 1
 
 grid_projection:
-  empty_palette_name: empty
   inner_cell_ratio: 0.90
   background_lab_distance: 34.0
   unknown_lab_distance: 96.0
@@ -28,17 +27,9 @@ grid_projection:
   neutral_background_min_value: 155
   min_foreground_fraction: 0.05
   min_foreground_pixels: 8
-  soft_vote_lab_scale: 38.0
-  hue_vote_boost: 1.8
-  strong_hue_feature_fraction: 0.30
   color_mask_kernel_size: 3
   color_mask_min_blob_area: 10
   component_mask_feature_fraction: 0.28
-  component_mask_vote_weight: 2.5
-  saturation_vote_weight: 0.8
-  neutral_max_saturation: 35
-  neutral_min_value: 175
-  bright_neutral_vote_weight: 0.35
   hue_min_value: 45
   red_hue_min_saturation: 60
   yellow_hue_min_saturation: 55
