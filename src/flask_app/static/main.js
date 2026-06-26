@@ -122,6 +122,9 @@ document.getElementById("btn-update").addEventListener("click", () => {
     grid_rows: GRID_H,
     grid_cols: GRID_W,
   });
+  const summaryEl = document.getElementById("block-summary");
+  document.getElementById("block-summary-table").innerHTML = '<p style="color:#8b949e;margin:0">계산 중...</p>';
+  summaryEl.classList.remove("hidden");
   addLog("INFO", "격자 수정 반영 요청");
 });
 
@@ -184,8 +187,10 @@ socket.on("grid_updated", (data) => {
 
 socket.on("block_plan", (data) => {
   if (!currentGrid) return;
-  currentBlockMap = buildBlockMap(data.blocks, currentGrid);
+  const { map, blockInfo } = buildBlockMap(data.blocks, currentGrid);
+  currentBlockMap = map;
   drawGrid(currentGrid);
+  showBlockSummary(blockInfo);
   addLog("INFO", "블록 분할 미리보기 표시: " + data.blocks.length + "개 블록");
 });
 
@@ -227,6 +232,7 @@ socket.on("assembly_error", (data) => {
 
 function buildBlockMap(blocks, grid) {
   const map = Array.from({length: GRID_H}, () => Array(GRID_W).fill(-1));
+  const blockInfo = []; // [{color, type}]
   let tIdx = 0;
   let bid = 0;
 
@@ -240,7 +246,7 @@ function buildBlockMap(blocks, grid) {
       if (!color || color === "" || color === "empty") { i++; continue; }
       let len = 1;
       while (i + len < GRID_W && grid[row][i + len] === color) len++;
-      if (len >= 2) runs.push({len, start: i});
+      if (len >= 2) runs.push({len, start: i, color});
       i += len;
     }
 
@@ -248,8 +254,9 @@ function buildBlockMap(blocks, grid) {
     const rowTasks = [];
     let covered = 0;
     while (tIdx < blocks.length && covered < totalCells) {
-      const w = blocks[tIdx].block_type === 1 ? 2 : 3;
-      rowTasks.push(w);
+      const btype = blocks[tIdx].block_type;
+      const w = btype === 1 ? 2 : 3;
+      rowTasks.push({w, btype});
       covered += w;
       tIdx++;
     }
@@ -258,8 +265,9 @@ function buildBlockMap(blocks, grid) {
       let col = run.start;
       let rem = run.len;
       while (rem > 0 && rtIdx < rowTasks.length) {
-        const w = rowTasks[rtIdx];
+        const {w, btype} = rowTasks[rtIdx];
         for (let c = col; c < col + w; c++) map[row][c] = bid;
+        blockInfo.push({color: run.color, type: btype});
         bid++;
         col += w;
         rem -= w;
@@ -267,7 +275,7 @@ function buildBlockMap(blocks, grid) {
       }
     }
   }
-  return map;
+  return {map, blockInfo};
 }
 
 // ── 격자 그리기 ──
@@ -316,6 +324,60 @@ function drawGrid(grid) {
       }
     }
   }
+}
+
+// ── 블록 요약 ──
+
+const COLOR_LABEL = { red: "빨강", blue: "파랑", yellow: "노랑", green: "초록" };
+
+function showBlockSummary(blockInfo) {
+  // {color → {t1: count, t2: count}}
+  const stats = {};
+  for (const color of Object.keys(COLOR_HEX)) stats[color] = {t1: 0, t2: 0};
+
+  for (const {color, type} of blockInfo) {
+    if (!stats[color]) continue;
+    if (type === 1) stats[color].t1++;
+    else            stats[color].t2++;
+  }
+
+  const activeColors = Object.keys(COLOR_HEX).filter(c => stats[c].t1 + stats[c].t2 > 0);
+  let totalT1 = 0, totalT2 = 0;
+
+  const rows = activeColors.map(color => {
+    const {t1, t2} = stats[color];
+    totalT1 += t1; totalT2 += t2;
+    return `
+      <tr>
+        <td><span class="summary-swatch" style="background:${COLOR_HEX[color]}"></span> ${COLOR_LABEL[color] || color}</td>
+        <td class="summary-count">${t1}개</td>
+        <td class="summary-count">${t2}개</td>
+        <td class="summary-count">${t1 + t2}개</td>
+      </tr>`;
+  }).join("");
+
+  document.getElementById("block-summary-table").innerHTML = `
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>색상</th>
+          <th class="summary-count">유형1 (2칸)</th>
+          <th class="summary-count">유형2 (3칸)</th>
+          <th class="summary-count">합계</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="4" style="color:#8b949e">블록 없음</td></tr>'}</tbody>
+      <tfoot>
+        <tr>
+          <td><strong>합계</strong></td>
+          <td class="summary-count"><strong>${totalT1}개</strong></td>
+          <td class="summary-count"><strong>${totalT2}개</strong></td>
+          <td class="summary-count"><strong>${totalT1 + totalT2}개</strong></td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+  document.getElementById("block-summary").classList.remove("hidden");
 }
 
 // ── 로그 ──

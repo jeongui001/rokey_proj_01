@@ -79,3 +79,29 @@ select {
 .log-ERROR { color: #f85149; }
 .log-WARN  { color: #d29922; }
 .log-INFO  { color: #8b949e; }
+#block-summary {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+}
+#block-summary h3 { margin: 0 0 10px; font-size: 14px; color: #e6edf3; }
+.summary-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.summary-table th,
+.summary-table td { padding: 6px 10px; }
+.summary-table th {
+  text-align: left;
+  color: #8b949e;
+  border-bottom: 1px solid #30363d;
+}
+.summary-table td { border-bottom: 1px solid #21262d; }
+.summary-table tfoot td { border-top: 1px solid #30363d; border-bottom: none; }
+.summary-swatch {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.summary-count { text-align: right; font-variant-numeric: tabular-nums; }
+.summary-table th.summary-count { text-align: right; }
