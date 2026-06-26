@@ -24,7 +24,8 @@ def fit_image(
     image: np.ndarray,
     mode: str = 'center_crop',
     *,
-    letterbox_bgr: tuple[int, int, int] = (0, 0, 0),
+    target_aspect: float | None = None,
+    smart_crop_min_scale: float = 0.80,
 ) -> np.ndarray:
     """Fit an arbitrary image before row/column grid sampling."""
 
@@ -38,20 +39,90 @@ def fit_image(
         x0 = (width - side) // 2
         return image[y0:y0 + side, x0:x0 + side].copy()
 
-    if mode == 'letterbox':
-        side = max(height, width)
-        canvas = np.empty((side, side, 3), dtype=image.dtype)
-        canvas[:] = np.asarray(letterbox_bgr, dtype=image.dtype)
-        y0 = (side - height) // 2
-        x0 = (side - width) // 2
-        canvas[y0:y0 + height, x0:x0 + width] = image
-        return canvas
-
-    if mode == 'stretch':
-        side = max(height, width)
-        return cv2.resize(image, (side, side), interpolation=cv2.INTER_LINEAR)
+    if mode == 'smart_crop':
+        aspect = _positive_aspect(target_aspect, width / float(height))
+        return _smart_crop_to_aspect(
+            image,
+            aspect,
+            float(np.clip(smart_crop_min_scale, 0.35, 1.0)),
+        )
 
     raise ValueError(f'Unsupported fit mode: {mode}')
+
+
+def _positive_aspect(target_aspect: float | None, fallback: float) -> float:
+    if target_aspect is None or not np.isfinite(target_aspect) or target_aspect <= 0.0:
+        return max(0.05, float(fallback))
+    return float(target_aspect)
+
+
+def _smart_crop_to_aspect(
+    image: np.ndarray,
+    target_aspect: float,
+    min_scale: float,
+) -> np.ndarray:
+    height, width = image.shape[:2]
+    saliency = _saliency_map(image)
+    max_width, max_height = _window_for_aspect(width, height, target_aspect)
+    crop_width = max(1, int(round(max_width * min_scale)))
+    crop_height = max(1, int(round(crop_width / target_aspect)))
+    if crop_height > max_height:
+        crop_height = max_height
+        crop_width = max(1, int(round(crop_height * target_aspect)))
+
+    weight_sum = float(saliency.sum())
+    if weight_sum <= 1e-6:
+        center_x, center_y = width * 0.5, height * 0.5
+    else:
+        yy, xx = np.mgrid[0:height, 0:width]
+        center_x = float((xx * saliency).sum() / weight_sum)
+        center_y = float((yy * saliency).sum() / weight_sum)
+
+    x0 = int(np.clip(round(center_x - crop_width * 0.5), 0, width - crop_width))
+    y0 = int(np.clip(round(center_y - crop_height * 0.5), 0, height - crop_height))
+    return image[y0:y0 + crop_height, x0:x0 + crop_width].copy()
+
+
+def _window_for_aspect(width: int, height: int, target_aspect: float) -> tuple[int, int]:
+    current_aspect = width / float(height)
+    if current_aspect > target_aspect:
+        return max(1, int(round(height * target_aspect))), height
+    return width, max(1, int(round(width / target_aspect)))
+
+
+def _saliency_map(image: np.ndarray) -> np.ndarray:
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    grad_x = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    edge = cv2.magnitude(grad_x, grad_y)
+    edge = edge / max(1.0, float(edge.max()))
+
+    saturation = hsv[:, :, 1].astype(np.float32) / 255.0
+    value = hsv[:, :, 2].astype(np.float32) / 255.0
+    mid_value = 1.0 - np.abs(value - 0.56) * 1.55
+    mid_value = np.clip(mid_value, 0.0, 1.0)
+
+    height, width = image.shape[:2]
+    yy, xx = np.mgrid[0:height, 0:width]
+    center = np.exp(
+        -(
+            ((xx - width * 0.5) / max(1.0, width * 0.40)) ** 2
+            + ((yy - height * 0.55) / max(1.0, height * 0.42)) ** 2
+        )
+    ).astype(np.float32)
+
+    saliency = edge * 0.46 + saturation * 0.22 + mid_value * 0.14 + center * 0.18
+    sky_like = (
+        (hsv[:, :, 0] >= 85)
+        & (hsv[:, :, 0] <= 112)
+        & (hsv[:, :, 1] >= 45)
+        & (hsv[:, :, 2] >= 130)
+    )
+    bright_neutral = (hsv[:, :, 1] <= 35) & (hsv[:, :, 2] >= 190)
+    saliency[sky_like] *= 0.25
+    saliency[bright_neutral] *= 0.35
+    return cv2.GaussianBlur(saliency.astype(np.float32), (0, 0), 5.0)
 
 
 def render_cells(

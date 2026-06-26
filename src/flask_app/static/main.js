@@ -9,6 +9,8 @@ let currentBlockMap = null;
 let GRID_W = 16;
 let GRID_H = 8;
 let selectedColor = "red";
+const CELL_ASPECT_W = 15.9;
+const CELL_ASPECT_H = 19.0;
 
 // ── 색상 팔레트 생성 ──
 
@@ -68,9 +70,10 @@ function getCellFromEvent(e) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
-  const cs = Math.floor(canvas.width / GRID_W);
-  const col = Math.floor((e.clientX - rect.left) * scaleX / cs);
-  const row = Math.floor((e.clientY - rect.top) * scaleY / cs);
+  const cellWidth = canvas.width / GRID_W;
+  const cellHeight = canvas.height / GRID_H;
+  const col = Math.floor((e.clientX - rect.left) * scaleX / cellWidth);
+  const row = Math.floor((e.clientY - rect.top) * scaleY / cellHeight);
   if (row < 0 || row >= GRID_H || col < 0 || col >= GRID_W) return null;
   return { row, col };
 }
@@ -116,6 +119,8 @@ document.getElementById("btn-update").addEventListener("click", () => {
   if (!currentGrid) return;
   socket.emit("update_grid", {
     grid_json: JSON.stringify(currentGrid),
+    grid_rows: GRID_H,
+    grid_cols: GRID_W,
   });
   addLog("INFO", "격자 수정 반영 요청");
 });
@@ -126,6 +131,8 @@ document.getElementById("btn-start").addEventListener("click", () => {
   if (!currentGrid) return;
   socket.emit("start_assembly", {
     grid_json: JSON.stringify(currentGrid),
+    grid_rows: GRID_H,
+    grid_cols: GRID_W,
   });
   addLog("INFO", "조립 시작 요청");
 });
@@ -139,13 +146,24 @@ document.getElementById("btn-resume").addEventListener("click", () => socket.emi
 
 socket.on("analysis_result", (data) => {
   if (data.success) {
-    if (data.grid_cols) GRID_W = data.grid_cols;
-    if (data.grid_rows) GRID_H = data.grid_rows;
-    const flat = JSON.parse(data.grid_json);
-    currentGrid = [];
-    for (let r = 0; r < GRID_H; r++) {
-      currentGrid.push(flat.slice(r * GRID_W, (r + 1) * GRID_W));
+    const parsed = JSON.parse(data.grid_json || "[]");
+    if (Array.isArray(parsed[0])) {
+      currentGrid = parsed;
+      GRID_H = currentGrid.length;
+      GRID_W = currentGrid[0] ? currentGrid[0].length : 0;
+    } else {
+      GRID_W = parseInt(data.grid_cols) || GRID_W;
+      GRID_H = parseInt(data.grid_rows) || GRID_H;
+      currentGrid = [];
+      for (let r = 0; r < GRID_H; r++) {
+        const row = parsed.slice(r * GRID_W, (r + 1) * GRID_W);
+        while (row.length < GRID_W) row.push("");
+        currentGrid.push(row);
+      }
     }
+    document.getElementById("input-cols").value = GRID_W;
+    document.getElementById("input-rows").value = GRID_H;
+    currentBlockMap = null;
     drawGrid(currentGrid);
     document.getElementById("section-result").classList.remove("hidden");
     addLog("INFO", `이미지 분석 완료 (${GRID_W}×${GRID_H})`);
@@ -252,15 +270,25 @@ function buildBlockMap(blocks, grid) {
 
 function drawGrid(grid) {
   const ctx = canvas.getContext("2d");
-  const cs = Math.floor(canvas.width / GRID_W);
-  const h = cs * GRID_H;
+  const h = Math.max(
+    GRID_H,
+    Math.round(canvas.width * (GRID_H * CELL_ASPECT_H) / (GRID_W * CELL_ASPECT_W))
+  );
   canvas.height = h;
+  const cellWidth = canvas.width / GRID_W;
+  const cellHeight = canvas.height / GRID_H;
   ctx.fillStyle = "#0d1117";
   ctx.fillRect(0, 0, canvas.width, h);
   for (let r = 0; r < GRID_H; r++) {
     for (let c = 0; c < GRID_W; c++) {
-      ctx.fillStyle = COLOR_HEX[grid[r][c]] || "#333";
-      ctx.fillRect(c * cs + 1, r * cs + 1, cs - 2, cs - 2);
+      const color = grid[r] ? grid[r][c] : "";
+      ctx.fillStyle = COLOR_HEX[color] || "#333";
+      ctx.fillRect(
+        c * cellWidth + 1,
+        r * cellHeight + 1,
+        Math.max(1, cellWidth - 2),
+        Math.max(1, cellHeight - 2)
+      );
     }
   }
 
@@ -274,7 +302,12 @@ function drawGrid(grid) {
         if (bid < 0 || drawn.has(bid)) continue;
         let endC = c;
         while (endC + 1 < GRID_W && currentBlockMap[r][endC + 1] === bid) endC++;
-        ctx.strokeRect(c * cs, r * cs, (endC - c + 1) * cs, cs);
+        ctx.strokeRect(
+          c * cellWidth,
+          r * cellHeight,
+          (endC - c + 1) * cellWidth,
+          cellHeight
+        );
         drawn.add(bid);
       }
     }

@@ -5,7 +5,6 @@ import numpy as np
 
 from .models import CellSample
 from .mosaic import validate_bgr_image
-from .palette import Palette
 
 
 DEFAULT_BLOCK_COLORS = ('red', 'yellow', 'green', 'blue')
@@ -14,34 +13,30 @@ UNKNOWN = 'unknown'
 EMPTY = 'empty'
 EXCLUDED_BLOCK_COLORS = {'white', 'black'}
 NON_BLOCK_COLORS = {BACKGROUND, UNKNOWN, EMPTY, '', *EXCLUDED_BLOCK_COLORS}
-UNKNOWN_RGB = (70, 70, 70)
-DEFAULT_GRID_ROWS = 10
-DEFAULT_GRID_COLS = 24
+RGB = tuple[int, int, int]
 
 
 def _rgb_for_name(
-    palette: Palette,
+    palette: dict[str, RGB],
+    empty_rgb: RGB,
     name: str,
-    empty_palette_name: str = 'empty',
-) -> tuple[int, int, int]:
-    if name in {BACKGROUND, EMPTY, '', *EXCLUDED_BLOCK_COLORS}:
-        return palette.empty_entry(empty_palette_name).rgb
-    if name == UNKNOWN:
-        return UNKNOWN_RGB
-    return palette.get(name).rgb
+) -> RGB:
+    if name in NON_BLOCK_COLORS:
+        return empty_rgb
+    return palette[name]
 
 
-def _block_colors(palette: Palette) -> tuple[str, ...]:
-    return tuple(name for name in DEFAULT_BLOCK_COLORS if palette.has(name))
+def _block_colors(palette: dict[str, RGB]) -> tuple[str, ...]:
+    return tuple(name for name in DEFAULT_BLOCK_COLORS if name in palette)
 
 
 def _palette_lab(
-    palette: Palette,
+    palette: dict[str, RGB],
+    empty_rgb: RGB,
     block_colors: tuple[str, ...],
-    empty_palette_name: str,
 ) -> dict[str, np.ndarray]:
     rgb_values = [
-        _rgb_for_name(palette, name, empty_palette_name)
+        _rgb_for_name(palette, empty_rgb, name)
         for name in (*block_colors, BACKGROUND)
     ]
     lab = cv2.cvtColor(np.asarray(rgb_values, dtype=np.uint8).reshape(-1, 1, 3), cv2.COLOR_RGB2LAB)
@@ -170,57 +165,6 @@ def _clean_colour_mask(mask: np.ndarray, cfg: dict) -> np.ndarray:
     return cleaned
 
 
-def _hue_colour_name(
-    hsv: np.ndarray,
-    block_colors: tuple[str, ...],
-    cfg: dict,
-) -> str:
-    hue, saturation, value = (int(hsv[0]), int(hsv[1]), int(hsv[2]))
-    if value < int(cfg.get('hue_min_value', 45)):
-        return ''
-
-    if (
-        'red' in block_colors
-        and saturation >= int(cfg.get('red_hue_min_saturation', cfg.get('hue_min_saturation', 60)))
-        and value >= int(cfg.get('red_hue_min_value', cfg.get('hue_min_value', 45)))
-        and (hue <= int(cfg.get('red_hue_max', 10)) or hue >= int(cfg.get('red_hue_min_2', 170)))
-    ):
-        return 'red'
-    if (
-        'yellow' in block_colors
-        and saturation >= int(cfg.get('yellow_hue_min_saturation', cfg.get('hue_min_saturation', 60)))
-        and value >= int(cfg.get('yellow_hue_min_value', cfg.get('hue_min_value', 45)))
-        and int(cfg.get('yellow_hue_min', 11)) <= hue <= int(cfg.get('yellow_hue_max', 42))
-    ):
-        return 'yellow'
-    if (
-        'green' in block_colors
-        and saturation >= int(cfg.get('green_hue_min_saturation', cfg.get('hue_min_saturation', 60)))
-        and value >= int(cfg.get('green_hue_min_value', cfg.get('hue_min_value', 45)))
-        and int(cfg.get('green_hue_min', 43)) <= hue <= int(cfg.get('green_hue_max', 87))
-    ):
-        return 'green'
-    if (
-        'blue' in block_colors
-        and int(cfg.get('blue_hue_min', 88)) <= hue <= int(cfg.get('blue_hue_max', 130))
-        and _is_blue_pixel(saturation, value, cfg)
-    ):
-        return 'blue'
-    return ''
-
-
-def _is_blue_pixel(saturation: int, value: int, cfg: dict) -> bool:
-    normal_blue = (
-        saturation >= int(cfg.get('blue_hue_min_saturation', cfg.get('hue_min_saturation', 90)))
-        and value >= int(cfg.get('blue_hue_min_value', cfg.get('hue_min_value', 45)))
-    )
-    dark_but_saturated_blue = (
-        saturation >= int(cfg.get('blue_dark_min_saturation', 100))
-        and value >= int(cfg.get('blue_dark_min_value', 70))
-    )
-    return normal_blue or dark_but_saturated_blue
-
-
 def _vote_cell_colour(
     pixels_bgr: np.ndarray,
     block_colors: tuple[str, ...],
@@ -232,50 +176,28 @@ def _vote_cell_colour(
     if pixels.size == 0:
         return BACKGROUND
 
-    lab = cv2.cvtColor(pixels.reshape(-1, 1, 3), cv2.COLOR_BGR2LAB).reshape(-1, 3).astype(np.float32)
-    hsv = cv2.cvtColor(pixels.reshape(-1, 1, 3), cv2.COLOR_BGR2HSV).reshape(-1, 3)
-    palette_lab = np.asarray([lab_palette[name] for name in block_colors], dtype=np.float32)
-    distances = np.linalg.norm(lab[:, None, :] - palette_lab[None, :, :], axis=2)
-    scale = max(1.0, float(cfg.get('soft_vote_lab_scale', 38.0)))
-    votes = np.exp(-0.5 * (distances / scale) ** 2)
-
-    hue_boost = max(1.0, float(cfg.get('hue_vote_boost', 1.8)))
-    colour_index = {name: index for index, name in enumerate(block_colors)}
-    hue_counts: dict[str, int] = {}
-    for index, value in enumerate(hsv):
-        hue_colour = _hue_colour_name(value, block_colors, cfg)
-        if hue_colour:
-            votes[index, colour_index[hue_colour]] *= hue_boost
-            hue_counts[hue_colour] = hue_counts.get(hue_colour, 0) + 1
-
-    if hue_counts:
-        feature_colour, feature_count = max(hue_counts.items(), key=lambda item: item[1])
-        if feature_count / float(len(hsv)) >= float(cfg.get('strong_hue_feature_fraction', 0.30)):
-            return feature_colour
-
     if mask_scores:
         mask_colour, mask_score = max(mask_scores.items(), key=lambda item: item[1])
         if mask_score >= float(cfg.get('component_mask_feature_fraction', 0.28)):
             return mask_colour
 
-    saturation = hsv[:, 1].astype(np.float32) / 255.0
-    value = hsv[:, 2].astype(np.float32)
-    pixel_weight = 1.0 + saturation * float(cfg.get('saturation_vote_weight', 0.8))
-    neutral = (hsv[:, 1] <= int(cfg.get('neutral_max_saturation', 35))) & (value >= int(cfg.get('neutral_min_value', 175)))
-    pixel_weight[neutral] *= float(cfg.get('bright_neutral_vote_weight', 0.35))
-
-    totals = (votes * pixel_weight[:, None]).sum(axis=0)
-    if mask_scores:
-        mask_weight = float(cfg.get('component_mask_vote_weight', 2.5)) * float(len(hsv))
-        for colour, score in mask_scores.items():
-            if colour in colour_index:
-                totals[colour_index[colour]] += score * mask_weight
-    return str(block_colors[int(np.argmax(totals))])
+    median_bgr = np.median(pixels, axis=0).astype(np.uint8)
+    median_lab = cv2.cvtColor(
+        median_bgr.reshape(1, 1, 3),
+        cv2.COLOR_BGR2LAB,
+    )[0, 0].astype(np.float32)
+    nearest = min(
+        block_colors,
+        key=lambda name: float(np.linalg.norm(median_lab - lab_palette[name])),
+    )
+    distance = float(np.linalg.norm(median_lab - lab_palette[nearest]))
+    return nearest if distance <= float(cfg.get('unknown_lab_distance', 96.0)) else BACKGROUND
 
 
 def quantize_image_to_grid(
     image_bgr: np.ndarray,
-    palette: Palette,
+    palette: dict[str, RGB],
+    empty_rgb: RGB,
     grid_rows: int = 10,
     grid_cols: int = 10,
     config: dict | None = None,
@@ -288,8 +210,6 @@ def quantize_image_to_grid(
     cfg = dict(config or {})
     inner_ratio = float(np.clip(cfg.get('inner_cell_ratio', 0.70), 0.20, 1.0))
     background_distance = float(cfg.get('background_lab_distance', 34.0))
-    unknown_distance = float(cfg.get('unknown_lab_distance', 96.0))
-    empty_palette_name = str(cfg.get('empty_palette_name', 'empty'))
     min_foreground_fraction = float(np.clip(cfg.get('min_foreground_fraction', 0.08), 0.0, 1.0))
     min_foreground_pixels = int(cfg.get('min_foreground_pixels', 8))
 
@@ -299,7 +219,7 @@ def quantize_image_to_grid(
     block_colors = _block_colors(palette)
     if not block_colors:
         raise ValueError('palette must contain at least one block colour.')
-    lab_palette = _palette_lab(palette, block_colors, empty_palette_name)
+    lab_palette = _palette_lab(palette, empty_rgb, block_colors)
     background_mask = _border_background_mask(image_bgr, cfg)
     colour_masks = _colour_masks(image_bgr, block_colors, cfg)
     grid = np.empty((grid_rows, grid_cols), dtype=object)
@@ -335,20 +255,16 @@ def quantize_image_to_grid(
                 colour_name: float(np.count_nonzero(mask[ys, xs])) / float(mask_area)
                 for colour_name, mask in colour_masks.items()
             }
-            colour = _vote_cell_colour(pixels, block_colors, lab_palette, cfg, mask_scores)
-            if colour != UNKNOWN:
-                grid[row, col] = colour
-                continue
-
-            nearest_block = min(
+            grid[row, col] = _vote_cell_colour(
+                pixels,
                 block_colors,
-                key=lambda name: float(np.linalg.norm(median_lab - lab_palette[name])),
+                lab_palette,
+                cfg,
+                mask_scores,
             )
-            distance = float(np.linalg.norm(median_lab - lab_palette[nearest_block]))
-            grid[row, col] = nearest_block if distance <= unknown_distance else BACKGROUND
 
     cleaned = clean_grid_for_bricks(smooth_grid(grid), cfg)
-    return cleaned, cells_from_grid(cleaned, palette, empty_palette_name)
+    return cleaned, cells_from_grid(cleaned, palette, empty_rgb)
 
 
 def smooth_grid(grid: np.ndarray) -> np.ndarray:
@@ -382,12 +298,7 @@ def clean_grid_for_bricks(grid: np.ndarray, cfg: dict) -> np.ndarray:
         int(cfg.get('min_island_neighbour_cells', 3)),
     )
     if bool(cfg.get('fix_single_cell_runs', True)):
-        fixed = _fix_single_cell_runs(fixed)
-        fixed = _fill_small_background_holes(
-            fixed,
-            int(cfg.get('max_background_hole_cells', 3)),
-            int(cfg.get('min_hole_neighbour_cells', 3)),
-        )
+        fixed = _remove_single_cell_runs(fixed)
     return fixed
 
 
@@ -522,49 +433,19 @@ def _neighbour4(row: int, col: int, rows: int, cols: int):
             yield nr, nc
 
 
-def _fix_single_cell_runs(grid: np.ndarray) -> np.ndarray:
+def _remove_single_cell_runs(grid: np.ndarray) -> np.ndarray:
     fixed = np.asarray(grid, dtype=object).copy()
-    rows, cols = fixed.shape
-
-    for _ in range(6):
+    for _ in range(3):
         original = fixed.copy()
         changed = False
-        for row in range(rows):
+        for row in range(fixed.shape[0]):
             runs = _row_runs(original[row])
-            index = 0
-            while index < len(runs):
-                start, end, colour = runs[index]
-                if colour in NON_BLOCK_COLORS or end - start != 1:
-                    index += 1
+            for index, (start, end, colour) in enumerate(runs):
+                if colour in NON_BLOCK_COLORS or end - start > 1:
                     continue
-
-                group_start = index
-                index += 1
-                while index < len(runs):
-                    run_start, run_end, run_colour = runs[index]
-                    if run_colour in NON_BLOCK_COLORS or run_end - run_start != 1:
-                        break
-                    index += 1
-
-                if index - group_start == 1:
-                    col = runs[group_start][0]
-                    colour = runs[group_start][2]
-                    if _vertical_colour_support(original, row, col, colour) > 0:
-                        changed = _expand_single_cell_run(fixed, original, row, col, colour) or changed
-                        continue
-
-                replacement = _replacement_for_single_run_group(
-                    original,
-                    row,
-                    runs,
-                    group_start,
-                    index,
-                )
-                for run_index in range(group_start, index):
-                    col = runs[run_index][0]
-                    new_colour = replacement or BACKGROUND
-                    changed = changed or fixed[row, col] != new_colour
-                    fixed[row, col] = new_colour
+                replacement = _neighbour_run_colour(runs, index)
+                fixed[row, start] = replacement
+                changed = changed or replacement != colour
         if not changed:
             break
     return fixed
@@ -582,105 +463,19 @@ def _row_runs(row: np.ndarray) -> list[tuple[int, int, str]]:
     return runs
 
 
-def _replacement_for_single_run_group(
-    grid: np.ndarray,
-    row: int,
+def _neighbour_run_colour(
     runs: list[tuple[int, int, str]],
-    start_index: int,
-    end_index: int,
+    index: int,
 ) -> str:
-    group_cols = [runs[index][0] for index in range(start_index, end_index)]
-    group_colours = [runs[index][2] for index in range(start_index, end_index)]
-    group_size = len(group_cols)
-    neighbour_weight = 1 if group_size > 1 else 4
-    group_weight = 12 if group_size > 1 else 2
-    scores: dict[str, int] = {}
-
-    for neighbour_index in (start_index - 1, end_index):
-        if neighbour_index < 0 or neighbour_index >= len(runs):
-            continue
-        neighbour_start, end, neighbour_colour = runs[neighbour_index]
-        if neighbour_colour in NON_BLOCK_COLORS:
-            continue
-        run_length = end - neighbour_start
-        scores[neighbour_colour] = scores.get(neighbour_colour, 0) + run_length * neighbour_weight
-
-    for colour in group_colours:
-        scores[colour] = scores.get(colour, 0) + group_weight
-    for col in group_cols:
-        for colour, support in _vertical_support_by_colour(grid, row, col).items():
-            scores[colour] = scores.get(colour, 0) + support * 3
-
-    if len(group_cols) == 1 and not _has_horizontal_block_neighbour(runs, start_index, end_index):
-        return BACKGROUND
-    if not scores:
-        return BACKGROUND
-    return max(scores.items(), key=lambda item: item[1])[0]
-
-
-def _expand_single_cell_run(
-    fixed: np.ndarray,
-    original: np.ndarray,
-    row: int,
-    col: int,
-    colour: str,
-) -> bool:
-    _, cols = original.shape
-    candidates: list[tuple[int, int, int]] = []
-
-    for neighbour_col in (col - 1, col + 1):
-        if not 0 <= neighbour_col < cols or original[row, neighbour_col] == colour:
-            continue
-        neighbour_colour = str(original[row, neighbour_col])
-        run_length = 0 if neighbour_colour in NON_BLOCK_COLORS else _horizontal_run_length(original[row], neighbour_col)
-        support = _vertical_colour_support(original, row, neighbour_col, colour)
-        candidates.append((support * 5 - run_length, -run_length, neighbour_col))
-
-    if not candidates:
-        return False
-
-    _, _, neighbour_col = max(candidates)
-    changed = fixed[row, col] != colour or fixed[row, neighbour_col] != colour
-    fixed[row, col] = colour
-    fixed[row, neighbour_col] = colour
-    return changed
-
-
-def _horizontal_run_length(row: np.ndarray, col: int) -> int:
-    colour = row[col]
-    start = col
-    while start > 0 and row[start - 1] == colour:
-        start -= 1
-    end = col + 1
-    while end < len(row) and row[end] == colour:
-        end += 1
-    return end - start
-
-
-def _vertical_colour_support(grid: np.ndarray, row: int, col: int, colour: str) -> int:
-    return _vertical_support_by_colour(grid, row, col).get(colour, 0)
-
-
-def _vertical_support_by_colour(grid: np.ndarray, row: int, col: int) -> dict[str, int]:
-    rows = grid.shape[0]
-    scores: dict[str, int] = {}
-    for nr in (row - 1, row + 1):
-        if 0 <= nr < rows:
-            colour = str(grid[nr, col])
+    choices = []
+    for neighbour_index in (index - 1, index + 1):
+        if 0 <= neighbour_index < len(runs):
+            start, end, colour = runs[neighbour_index]
             if colour not in NON_BLOCK_COLORS:
-                scores[colour] = scores.get(colour, 0) + 1
-    return scores
-
-
-def _has_horizontal_block_neighbour(
-    runs: list[tuple[int, int, str]],
-    start_index: int,
-    end_index: int,
-) -> bool:
-    for neighbour_index in (start_index - 1, end_index):
-        if 0 <= neighbour_index < len(runs) and runs[neighbour_index][2] not in NON_BLOCK_COLORS:
-            return True
-    return False
+                choices.append((end - start, colour))
+    if not choices:
+        return BACKGROUND
+    return max(choices)[1]
 
 
 def merge_blocks(grid: np.ndarray) -> list[dict]:
@@ -724,8 +519,8 @@ def _brick_widths(run_length: int) -> list[int]:
 
 def cells_from_grid(
     grid: np.ndarray,
-    palette: Palette,
-    empty_palette_name: str = 'empty',
+    palette: dict[str, RGB],
+    empty_rgb: RGB,
 ) -> list[CellSample]:
     cells: list[CellSample] = []
     rows, cols = np.asarray(grid, dtype=object).shape
@@ -737,7 +532,7 @@ def cells_from_grid(
                     row=row,
                     col=col,
                     color=colour,
-                    rgb=_rgb_for_name(palette, colour, empty_palette_name),
+                    rgb=_rgb_for_name(palette, empty_rgb, colour),
                     occupied=colour not in NON_BLOCK_COLORS,
                     confidence=1.0,
                     source_uv=((col + 0.5) / cols, (row + 0.5) / rows),
