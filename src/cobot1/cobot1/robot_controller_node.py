@@ -21,8 +21,11 @@ from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
+from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 import DR_init
+
+from dsr_msgs2.srv import MoveStop
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. 로봇 기본 설정
@@ -363,6 +366,8 @@ class RobotMotionController:
             set_tcp,
             set_tool,
             add_tool,
+            check_motion,
+            DR_STATE_IDLE,
         )
         from DR_common2 import posj
 
@@ -384,6 +389,8 @@ class RobotMotionController:
         self._get_digital_input = get_digital_input
         self._ON = ON
         self._OFF = OFF
+        self._check_motion = check_motion
+        self._DR_STATE_IDLE = DR_STATE_IDLE
 
         self._logger.info("RobotMotionController 초기화 완료")
 
@@ -406,6 +413,49 @@ class RobotMotionController:
             raise RuntimeError("movej 홈 이동 실패")
         self._mwait()
 
+    def _movel_and_wait(
+        self,
+        pose_arg,
+        *,
+        vel,
+        acc,
+        ref,
+        mod=None,
+        step_name: str,
+    ) -> None:
+        """
+        비동기 movel 후 완료를 50ms 간격으로 폴링하며 대기한다.
+        폴링 중 force_stop_event가 설정되면 RuntimeError를 발생시킨다.
+        """
+        kwargs: dict = dict(vel=vel, acc=acc, ref=ref, _async=1)
+        if mod is not None:
+            kwargs['mod'] = mod
+
+        ret = self._movel(pose_arg, **kwargs)
+        if ret == -1:
+            raise RuntimeError(f"movel 실패: step={step_name}")
+
+        # 컨트롤러가 모션을 큐에 올릴 때까지 짧게 대기
+        time.sleep(0.1)
+
+        seen_busy = False
+        while True:
+            if self._node._force_stop_event.is_set():
+                raise RuntimeError(f"외력 감지 정지: step={step_name}")
+
+            state = self._check_motion()
+            if state == self._DR_STATE_IDLE:
+                if seen_busy:
+                    break
+                # 아직 모션 시작 전일 수 있으니 한 번 더 확인
+                time.sleep(0.05)
+                if self._check_motion() == self._DR_STATE_IDLE:
+                    break
+            else:
+                seen_busy = True
+
+            time.sleep(0.05)
+
     def move_linear(
         self,
         pose: CartesianPose,
@@ -426,17 +476,13 @@ class RobotMotionController:
             f"x={pose.x_mm:.2f}  y={pose.y_mm:.2f}  z={pose.z_mm:.2f}  "
             f"a={pose.a_deg:.2f}  b={pose.b_deg:.2f}  c={pose.c_deg:.2f}"
         )
-        ret = self._movel(
+        self._movel_and_wait(
             to_posx(pose),
             vel=_vel,
             acc=_acc,
             ref=self._DR_BASE,
+            step_name=step_name,
         )
-        if ret == -1:
-            raise RuntimeError(
-                f"movel 실패: step={step_name}, pose={pose}"
-            )
-        self._mwait()
 
     def move_relative_tool_z(
         self,
@@ -457,18 +503,14 @@ class RobotMotionController:
         self._logger.info(
             f"Tool Z 상대 이동: step={step_name}, distance={distance_mm:.2f} mm"
         )
-        ret = self._movel(
+        self._movel_and_wait(
             _posx(0.0, 0.0, distance_mm, 0.0, 0.0, 0.0),
             vel=LINEAR_VELOCITY,
             acc=LINEAR_ACCELERATION,
             ref=self._DR_TOOL,
             mod=self._DR_MV_MOD_REL,
+            step_name=step_name,
         )
-        if ret == -1:
-            raise RuntimeError(
-                f"Tool Z 상대 인출 실패: distance_mm={distance_mm}"
-            )
-        self._mwait()
 
     def get_current_cartesian_pose(self) -> CartesianPose:
         """
@@ -526,14 +568,13 @@ class RobotMotionController:
         키팅 트레이에서 블록을 집는 전체 시퀀스.
 
         단계 순서:
+          KITTING_RELEASE         — 그리퍼 열기
           KITTING_OVERHEAD_MOVE   — 트레이 전체 상부 Pose로 이동
           KITTING_PICK_DESCEND    — 상부 Pose → Pick Pose 한 번의 movel
-                                    (Z + A/B/C 동시 변경)
           KITTING_PRE_GRIP_WAIT   — Pick Pose 도달 후 0.3초 정지
-          KITTING_GRIP            — RG2 Close + Busy 폴링 (settle 없음)
-          KITTING_POST_GRIP_WAIT  — Busy 종료 후 정확히 0.5초 추가 대기
-          KITTING_TOOL_Z_RETRACT  — Tool 기준 +Z 40mm 상대 인출
-          KITTING_RETURN_OVERHEAD — 해당 트레이의 전체 상부 Pose로 정확히 복귀
+          KITTING_GRIP            — RG2 Close
+          KITTING_TOOL_Z_RETRACT  — Tool 기준 +Z 상대 인출
+          KITTING_RETURN_OVERHEAD — 트레이 상부 Pose로 복귀
         """
         profile = select_kitting_profile(task.color, task.block_type_str)
 
@@ -549,34 +590,34 @@ class RobotMotionController:
             if step_callback is not None:
                 step_callback(name)
 
-        # 1. 그리퍼 열기 (블록을 잡을 수 있도록 준비)
+        # 1. 그리퍼 열기
         _step("KITTING_RELEASE")
         self.rg2_release()
 
-        # 2. 트레이 전체 상부 Pose로 이동
+        # 2. 트레이 상부 Pose로 이동
         _step("KITTING_OVERHEAD_MOVE")
         self.move_linear(profile.overhead_pose, "KITTING_OVERHEAD_MOVE")
 
-        # 3. 상부 Pose → Pick Pose: Z와 A/B/C를 한 번의 movel에서 동시에 변경
+        # 3. Pick Pose로 하강
         _step("KITTING_PICK_DESCEND")
         self.move_linear(profile.pick_pose, "KITTING_PICK_DESCEND")
 
-        # 3. Pick Pose 도달 후 0.3초 정지
+        # 4. Pick Pose 도달 후 정지
         _step("KITTING_PRE_GRIP_WAIT")
         self._wait(PICK_PRE_GRIP_WAIT_SEC)
 
-        # 4. RG2 grip (Digital I/O — wait_digital_input으로 완료 대기)
+        # 5. RG2 grip
         _step("KITTING_GRIP")
         self.rg2_grip()
 
-        # 6. 기울어진 Tool 방향 유지 상태에서 Tool 기준 +Z 40mm 상대 인출
+        # 6. Tool Z 방향 인출
         _step("KITTING_TOOL_Z_RETRACT")
         self.move_relative_tool_z(
             profile.tool_retract_z_mm,
             "KITTING_TOOL_Z_RETRACT",
         )
 
-        # 7. 해당 트레이의 전체 상부 Pose로 정확히 복귀 (get_current_posx 사용 안 함)
+        # 7. 트레이 상부 Pose로 복귀
         _step("KITTING_RETURN_OVERHEAD")
         self.move_linear(profile.overhead_pose, "KITTING_RETURN_OVERHEAD")
 
@@ -596,9 +637,9 @@ class RobotMotionController:
 
         단계 순서:
           TARGET_OVERHEAD_MOVE  — Place 상부 Pose로 이동
-          PLACE_DESCEND         — 저속으로 실제 Place Pose까지 하강
-          PLACE_RELEASE         — RG2 Open (블록 해제)
-          RETURN_PLACE_OVERHEAD — Place 상부 Pose로 복귀 (Home 이동 없음)
+          PLACE_DESCEND         — 저속으로 Place Pose까지 하강
+          PLACE_RELEASE         — RG2 Open
+          RETURN_PLACE_OVERHEAD — Place 상부 Pose로 복귀
         """
         def _step(name: str) -> None:
             self._node._pause_event.wait()
@@ -608,20 +649,14 @@ class RobotMotionController:
 
         place_y_mm = task.place_y_mm
 
-        # Place Y 유효성 검사
         if not math.isfinite(place_y_mm):
-            raise ValueError(
-                f"Place Y가 유한수가 아닙니다: y={place_y_mm}"
-            )
+            raise ValueError(f"Place Y가 유한수가 아닙니다: y={place_y_mm}")
         if not (PLACE_Y_MIN_MM <= place_y_mm <= PLACE_Y_MAX_MM):
             raise ValueError(
-                f"Place Y 범위 오류: "
-                f"y={place_y_mm}, "
+                f"Place Y 범위 오류: y={place_y_mm}, "
                 f"허용 범위=[{PLACE_Y_MIN_MM}, {PLACE_Y_MAX_MM}]"
             )
 
-        # stack_index 기반 실제 배치 Z 계산
-        # stack_index=0 → Z=5.0, stack_index=1 → Z=24.5, ...
         actual_place_z = PLACE_BASE_Z_MM + task.stack_index * STACK_PITCH_MM
 
         if actual_place_z >= PLACE_OVERHEAD_Z_MM:
@@ -631,7 +666,6 @@ class RobotMotionController:
                 f"PLACE_OVERHEAD_Z_MM={PLACE_OVERHEAD_Z_MM:.2f} mm 이상"
             )
 
-        # Place 상부 Pose: 고정 X, Goal Y, 고정 Z/A/B/C
         place_overhead_pose = CartesianPose(
             x_mm=PLACE_FIXED_X_MM,
             y_mm=place_y_mm,
@@ -640,8 +674,6 @@ class RobotMotionController:
             b_deg=PLACE_B_DEG,
             c_deg=PLACE_C_DEG,
         )
-
-        # 실제 Place Pose: 고정 X, Goal Y, 계산된 Z, 고정 A/B/C
         actual_place_pose = CartesianPose(
             x_mm=PLACE_FIXED_X_MM,
             y_mm=place_y_mm,
@@ -655,7 +687,7 @@ class RobotMotionController:
         _step("TARGET_OVERHEAD_MOVE")
         self.move_linear(place_overhead_pose, "TARGET_OVERHEAD_MOVE")
 
-        # 2. 저속으로 실제 Place Pose까지 하강 (위치 제어, 힘 제어 없음)
+        # 2. 저속으로 Place Pose까지 하강
         _step("PLACE_DESCEND")
         self.move_linear(
             actual_place_pose,
@@ -664,18 +696,17 @@ class RobotMotionController:
             acc=PLACE_LINEAR_ACCELERATION,
         )
 
-        # 3. RG2 release (Digital I/O — wait_digital_input으로 완료 대기)
+        # 3. RG2 release
         _step("PLACE_RELEASE")
         self.rg2_release()
 
-        # 4. 같은 Place 상부 Pose로 복귀 (Home 이동 없음)
+        # 4. Place 상부 Pose로 복귀
         _step("RETURN_PLACE_OVERHEAD")
         self.move_linear(place_overhead_pose, "RETURN_PLACE_OVERHEAD")
 
         self._logger.info(
             f"[color={task.color}] Place 완료 — "
-            f"stack_index={task.stack_index}, "
-            f"place_z={actual_place_z:.2f} mm"
+            f"stack_index={task.stack_index}, place_z={actual_place_z:.2f} mm"
         )
 
     # ── 대표 Pick & Place 함수 ────────────────────────────────────────────────
@@ -685,36 +716,91 @@ class RobotMotionController:
         task: PickPlaceTask,
         step_callback: Optional[Callable[[str], None]] = None,
     ) -> None:
-        """
-        키팅 트레이 방식 전체 Pick & Place 시퀀스를 실행한다.
-        pick_from_kitting_tray → place_block_at_target 순서로 호출한다.
-        """
+        """키팅 트레이 방식 전체 Pick & Place 시퀀스를 실행한다."""
         self.pick_from_kitting_tray(task, step_callback=step_callback)
         self.place_block_at_target(task, step_callback=step_callback)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 15. RobotControllerNode — Action Server 통합
+# 15. _PauseServiceNode — pause/resume 및 외력 감지
 # ─────────────────────────────────────────────────────────────────────────────
 
 class _PauseServiceNode(Node):
-    """pause_event를 전용 executor에서 제어하는 독립 노드."""
+    """
+    pause/resume 서비스와 외력 감지 polling을 전용 executor에서 처리하는 독립 노드.
+    RobotControllerNode의 execute_callback이 blocking 중에도 즉시 응답한다.
+    """
 
-    def __init__(self, pause_event: Event):
+    def __init__(self, pause_event: Event, force_stop_event: Event):
         super().__init__('robot_controller_pause')
         self._pause_event = pause_event
-        self.create_service(SetBool, '/robot/pause', self._handle)
+        self._force_stop_event = force_stop_event
 
-    def _handle(self, request, response):
+        self.declare_parameter('torque_threshold_nm', 10.0)
+        self.declare_parameter('force_poll_hz', 10.0)
+
+        self.create_service(SetBool, '/robot/pause', self._handle_pause)
+
+        self._force_detected_pub = self.create_publisher(Bool, '/robot/force_detected', 10)
+        self._move_stop_client = self.create_client(MoveStop, '/dsr01/motion/move_stop')
+
+        # DSR_ROBOT2는 RobotControllerNode 생성 시 이미 import됨 (sys.modules 캐시)
+        from DSR_ROBOT2 import get_external_torque
+        self._get_external_torque = get_external_torque
+
+        Thread(target=self._poll_loop, daemon=True).start()
+
+    def _handle_pause(self, request, response):
         if request.data:
             self._pause_event.clear()
             self.get_logger().info('일시정지')
         else:
+            # 재개: force_stop_event도 클리어하여 정상 상태로 복원
+            self._force_stop_event.clear()
             self._pause_event.set()
             self.get_logger().info('재개')
         response.success = True
         return response
 
+    def _poll_loop(self):
+        threshold = self.get_parameter('torque_threshold_nm').value
+        hz = self.get_parameter('force_poll_hz').value
+        interval = 1.0 / hz
+        while rclpy.ok():
+            time.sleep(interval)
+            if self._force_stop_event.is_set():
+                continue
+            try:
+                torques = self._get_external_torque()
+                if torques and any(abs(t) > threshold for t in torques):
+                    self._do_force_stop()
+            except Exception:
+                pass
+
+    def _do_force_stop(self):
+        if self._force_stop_event.is_set():
+            return
+
+        self._force_stop_event.set()
+        self._pause_event.clear()
+
+        # 컨트롤러에 즉시 정지 명령 (fire-and-forget)
+        if self._move_stop_client.service_is_ready():
+            req = MoveStop.Request()
+            req.stop_mode = 0  # QUICK stop
+            self._move_stop_client.call_async(req)
+        else:
+            self.get_logger().warn('move_stop 서비스 미준비')
+
+        msg = Bool()
+        msg.data = True
+        self._force_detected_pub.publish(msg)
+        self.get_logger().warn('외력 감지 — 정지 명령 전송, 팝업 알림 발행')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 16. RobotControllerNode — Action Server 통합
+# ─────────────────────────────────────────────────────────────────────────────
 
 class RobotControllerNode(Node):
     """
@@ -722,7 +808,7 @@ class RobotControllerNode(Node):
     BlockTask[] Goal을 수신하여 키팅 트레이 방식 Pick & Place를 실행한다.
     """
 
-    def __init__(self, pause_event: Event) -> None:
+    def __init__(self, pause_event: Event, force_stop_event: Event) -> None:
         super().__init__("robot_controller", namespace="dsr01")
 
         setattr(DR_init, '__dsr__node', self)
@@ -732,6 +818,7 @@ class RobotControllerNode(Node):
         self._busy_lock = Lock()
         self._busy = False
         self._pause_event = pause_event
+        self._force_stop_event = force_stop_event
         self._action_callback_group = ReentrantCallbackGroup()
         self._motion_controller = RobotMotionController(self)
 
@@ -784,16 +871,10 @@ class RobotControllerNode(Node):
                     return GoalResponse.REJECT
 
             self._busy = True
-            self.get_logger().info(
-                f"Goal 수락: {len(tasks)}개 task")
+            self.get_logger().info(f"Goal 수락: {len(tasks)}개 task")
             return GoalResponse.ACCEPT
 
-    def publish_feedback(
-        self,
-        goal_handle,
-        *,
-        current_index: int,
-    ) -> None:
+    def publish_feedback(self, goal_handle, *, current_index: int) -> None:
         """현재 진행 인덱스를 Action Feedback으로 퍼블리시한다."""
         from cobot1_interfaces.action import Assembly
 
@@ -805,13 +886,7 @@ class RobotControllerNode(Node):
         """
         Goal 수락 후 큐를 순차 실행한다.
 
-        흐름:
-          1. MOVE_HOME_AT_QUEUE_START가 True이면 홈 이동
-          2. tasks 순회 → BlockTask (color, block_type, y_position) 기반 Pick & Place
-          3. 각 작업 시작·완료 시 current_index Feedback 퍼블리시
-          4. MOVE_HOME_AT_QUEUE_END가 True이면 홈 이동 후 종료
-          5. 예외 발생 시 abort 후 Result 반환
-          6. finally에서 반드시 _busy = False 해제
+        외력 감지로 RuntimeError 발생 시 동일 인덱스를 재시도한다.
         """
         from cobot1_interfaces.action import Assembly
 
@@ -821,7 +896,7 @@ class RobotControllerNode(Node):
         current_index = -1
 
         try:
-            self._pause_event.set()  # 이전 goal의 pause 상태가 남아있을 경우 초기화
+            self._pause_event.set()  # 이전 goal의 pause 상태 초기화
 
             tasks = goal_handle.request.tasks
             total_count = len(tasks)
@@ -834,8 +909,9 @@ class RobotControllerNode(Node):
                 self._motion_controller.move_home()
 
             stack_counter: dict = {}
+            current_index = 0
 
-            for current_index, task_msg in enumerate(tasks):
+            while current_index < total_count:
                 self._pause_event.wait()
 
                 if goal_handle.is_cancel_requested:
@@ -843,12 +919,12 @@ class RobotControllerNode(Node):
                     goal_handle.canceled()
                     return result
 
+                task_msg = tasks[current_index]
                 normalized_color = normalize_color(task_msg.color)
                 block_type_str = determine_block_type(task_msg.block_type)
                 place_y_mm = float(task_msg.y_position)
 
                 stack_index = stack_counter.get(place_y_mm, 0)
-                stack_counter[place_y_mm] = stack_index + 1
 
                 self.get_logger().info(
                     f"[{current_index+1}/{total_count}] "
@@ -862,19 +938,28 @@ class RobotControllerNode(Node):
                     stack_index=stack_index,
                 )
 
-                # 클로저 기본 인수로 반복 변수 캡처 (파이썬 late binding 방지)
                 def _step_cb(
                     _step_name: str,
                     _idx: int = current_index,
                 ) -> None:
                     self.publish_feedback(goal_handle, current_index=_idx)
 
-                self._motion_controller.execute_pick_place(
-                    pick_task,
-                    step_callback=_step_cb,
-                )
+                try:
+                    self._motion_controller.execute_pick_place(
+                        pick_task,
+                        step_callback=_step_cb,
+                    )
+                except RuntimeError as exc:
+                    if self._force_stop_event.is_set():
+                        self.get_logger().warn(
+                            f'외력 감지 정지 — index={current_index}, 재개 대기')
+                        self._pause_event.wait()  # resume 신호 대기
+                        continue  # 동일 current_index 재시도
+                    raise
 
                 self.publish_feedback(goal_handle, current_index=current_index)
+                stack_counter[place_y_mm] = stack_index + 1
+                current_index += 1
 
             if MOVE_HOME_AT_QUEUE_END:
                 self._motion_controller.move_home()
@@ -893,13 +978,12 @@ class RobotControllerNode(Node):
             return result
 
         finally:
-            # 성공/실패/취소 어느 경우에도 반드시 busy 해제
             with self._busy_lock:
                 self._busy = False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 16. 실행 함수
+# 17. 실행 함수
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main(args=None) -> None:
@@ -911,9 +995,10 @@ def main(args=None) -> None:
 
     pause_event = Event()
     pause_event.set()
+    force_stop_event = Event()
 
-    node = RobotControllerNode(pause_event)
-    pause_node = _PauseServiceNode(pause_event)
+    node = RobotControllerNode(pause_event, force_stop_event)
+    pause_node = _PauseServiceNode(pause_event, force_stop_event)
 
     pause_executor = SingleThreadedExecutor()
     pause_executor.add_node(pause_node)

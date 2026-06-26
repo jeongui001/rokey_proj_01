@@ -64,6 +64,10 @@ def on_assembly_done(data):
 def on_assembly_error(data):
     socketio.emit('assembly_error', data, namespace='/')
 
+@socketio.on('force_detected', namespace='/bridge')
+def on_force_detected(data):
+    socketio.emit('force_detected', data, namespace='/')
+
 
 # ── 연결 로그 ──
 
