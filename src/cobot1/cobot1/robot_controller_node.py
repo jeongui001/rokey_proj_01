@@ -13,13 +13,13 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass
-from threading import Event, Lock
+from threading import Event, Lock, Thread
 from typing import Callable, List, Optional
 
 import rclpy
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
 from std_srvs.srv import SetBool
 import DR_init
@@ -697,13 +697,32 @@ class RobotMotionController:
 # 15. RobotControllerNode — Action Server 통합
 # ─────────────────────────────────────────────────────────────────────────────
 
+class _PauseServiceNode(Node):
+    """pause_event를 전용 executor에서 제어하는 독립 노드."""
+
+    def __init__(self, pause_event: Event):
+        super().__init__('robot_controller_pause')
+        self._pause_event = pause_event
+        self.create_service(SetBool, '/robot/pause', self._handle)
+
+    def _handle(self, request, response):
+        if request.data:
+            self._pause_event.clear()
+            self.get_logger().info('일시정지')
+        else:
+            self._pause_event.set()
+            self.get_logger().info('재개')
+        response.success = True
+        return response
+
+
 class RobotControllerNode(Node):
     """
     ROS2 Action Server(/execute_queue)를 제공하는 메인 노드.
     BlockTask[] Goal을 수신하여 키팅 트레이 방식 Pick & Place를 실행한다.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, pause_event: Event) -> None:
         super().__init__("robot_controller", namespace="dsr01")
 
         setattr(DR_init, '__dsr__node', self)
@@ -712,8 +731,7 @@ class RobotControllerNode(Node):
 
         self._busy_lock = Lock()
         self._busy = False
-        self._pause_event = Event()
-        self._pause_event.set()
+        self._pause_event = pause_event
         self._action_callback_group = ReentrantCallbackGroup()
         self._motion_controller = RobotMotionController(self)
 
@@ -727,24 +745,12 @@ class RobotControllerNode(Node):
             cancel_callback=self.cancel_callback,
             callback_group=self._action_callback_group,
         )
-        self.create_service(SetBool, '/robot/pause', self._on_pause_request,
-                            callback_group=self._action_callback_group)
 
         self.get_logger().info(f"Action Server 시작: {ACTION_NAME}")
 
-    def _on_pause_request(self, request, response):
-        if request.data:
-            self._pause_event.clear()
-            self.get_logger().info("일시정지")
-        else:
-            self._pause_event.set()
-            self.get_logger().info("재개")
-        response.success = True
-        return response
-
     def cancel_callback(self, _goal_handle) -> CancelResponse:
         """취소 요청을 항상 수락한다. 실제 중단은 execute_callback 루프에서 처리."""
-        self._pause_event.set()  # pause 상태에서 cancel 시 wait() 해제
+        self._pause_event.set()  # pause 중 cancel 시 wait() 해제
         self.get_logger().info("액션 취소 요청 수신")
         return CancelResponse.ACCEPT
 
@@ -815,6 +821,8 @@ class RobotControllerNode(Node):
         current_index = -1
 
         try:
+            self._pause_event.set()  # 이전 goal의 pause 상태가 남아있을 경우 초기화
+
             tasks = goal_handle.request.tasks
             total_count = len(tasks)
             self.get_logger().info(f"Queue 실행 시작: {total_count}개 task")
@@ -896,13 +904,23 @@ class RobotControllerNode(Node):
 
 def main(args=None) -> None:
     """
-    ROS2를 초기화하고 RobotControllerNode를 실행한다.
-    MultiThreadedExecutor(3스레드): execute 스레드 / goal·cancel 콜백 스레드 / 서비스 콜백 스레드를 분리한다.
+    _PauseServiceNode를 전용 SingleThreadedExecutor + 별도 스레드로 실행해
+    action execute_callback이 blocking 중에도 pause/resume 서비스가 응답하도록 분리한다.
     """
     rclpy.init(args=args)
 
-    node = RobotControllerNode()
-    executor = MultiThreadedExecutor(num_threads=3)
+    pause_event = Event()
+    pause_event.set()
+
+    node = RobotControllerNode(pause_event)
+    pause_node = _PauseServiceNode(pause_event)
+
+    pause_executor = SingleThreadedExecutor()
+    pause_executor.add_node(pause_node)
+    pause_thread = Thread(target=pause_executor.spin, daemon=True)
+    pause_thread.start()
+
+    executor = MultiThreadedExecutor(num_threads=2)
     executor.add_node(node)
 
     try:
@@ -911,7 +929,9 @@ def main(args=None) -> None:
         node.get_logger().info("RobotController Action Server를 종료합니다.")
     finally:
         executor.shutdown()
+        pause_executor.shutdown()
         node.destroy_node()
+        pause_node.destroy_node()
         rclpy.shutdown()
 
 

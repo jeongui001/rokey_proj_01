@@ -132,8 +132,14 @@ document.getElementById("btn-start").addEventListener("click", () => {
 
 // ── 일시정지 / 재개 ──
 
-document.getElementById("btn-pause").addEventListener("click", () => socket.emit("pause"));
-document.getElementById("btn-resume").addEventListener("click", () => socket.emit("resume"));
+document.getElementById("btn-pause").addEventListener("click", () => {
+  socket.emit("pause");
+  addLog("INFO", "일시정지 요청");
+});
+document.getElementById("btn-resume").addEventListener("click", () => {
+  socket.emit("resume");
+  addLog("INFO", "재개 요청");
+});
 
 // ── 서버 이벤트 수신 ──
 
@@ -229,8 +235,6 @@ function buildBlockMap(blocks, grid) {
       covered += w;
       tIdx++;
     }
-    if (layer % 2 === 1) rowTasks.reverse();
-
     let rtIdx = 0;
     for (const run of runs) {
       let col = run.start;
