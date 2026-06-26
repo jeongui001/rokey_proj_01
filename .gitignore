@@ -1,0 +1,37 @@
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Claude
+.claude/
+CLAUDE.md
+code.md
+.claude
+# OS
+.DS_Store
+Thumbs.db
+sequence.md
+
+# Logs / temp
+*.log
+*.tmp
+
+# file
+gear_insert.py
+
+# ROS2 build directories
+build
+install
+log
+# docs
+docs/superpowers
+
+# TRASH
+TRASH/
+TRASH-FILES.md
+

@@ -60,8 +60,8 @@ LINEAR_VELOCITY: List[float] = [60.0, 60.0]
 LINEAR_ACCELERATION: List[float] = [60.0, 60.0]
 
 # Place 최종 하강 전용 저속 설정
-PLACE_LINEAR_VELOCITY: List[float] = [10.0, 10.0]
-PLACE_LINEAR_ACCELERATION: List[float] = [10.0, 10.0]
+PLACE_LINEAR_VELOCITY: List[float] = [20.0, 15.0]
+PLACE_LINEAR_ACCELERATION: List[float] = [20.0, 15.0]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. RG2 설정
@@ -226,16 +226,16 @@ KITTING_TRAY_PROFILES = {
             profile_id="yellow_2x2",
             color="yellow",
             block_type="2x2",
-            overhead_pose=CartesianPose(203.26, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(203.26, -101.5,  16.50, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(261.42, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(261.42, -101.5,  16.50, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
             profile_id="yellow_3x2",
             color="yellow",
             block_type="3x2",
-            overhead_pose=CartesianPose(256.98, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(256.98, -110.0,  17.0, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(315.14, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(315.14, -110.0,  17.0, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -244,16 +244,16 @@ KITTING_TRAY_PROFILES = {
             profile_id="red_2x2",
             color="red",
             block_type="2x2",
-            overhead_pose=CartesianPose(308.64, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(308.64, -101.5,  16.50, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(366.8, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(366.8, -101.5,  16.50, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
             profile_id="red_3x2",
             color="red",
             block_type="3x2",
-            overhead_pose=CartesianPose(361.50, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(361.50, -110.0,  17.0, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(419.66, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(419.66, -110.0,  17.0, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -262,16 +262,16 @@ KITTING_TRAY_PROFILES = {
             profile_id="blue_2x2",
             color="blue",
             block_type="2x2",
-            overhead_pose=CartesianPose(438.19, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(438.19, -101.5,  16.50, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(496.35, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(496.35, -101.5,  16.50, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
             profile_id="blue_3x2",
             color="blue",
             block_type="3x2",
-            overhead_pose=CartesianPose(491.30, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(491.30, -110.0,  17.0, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(549.46, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(549.46, -110.0,  17.0, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -280,8 +280,8 @@ KITTING_TRAY_PROFILES = {
             profile_id="green_2x2",
             color="green",
             block_type="2x2",
-            overhead_pose=CartesianPose(545.08, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(545.08, -101.5,  16.50, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(603.24, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(603.24, -101.5,  16.50, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         # 임시: 초록 3x2 트레이로 사용. 실제 초록 3x2 트레이 티칭 후 좌표 업데이트 필요.
@@ -289,8 +289,8 @@ KITTING_TRAY_PROFILES = {
             profile_id="green_3x2",
             color="green",
             block_type="3x2",
-            overhead_pose=CartesianPose(600.19, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(600.19, -97.78,  15.80, 90.00, -149.8, 90.38),
+            overhead_pose=CartesianPose(658.35, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(658.35, -110.0,  17.0, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -551,11 +551,19 @@ class RobotMotionController:
         _step("KITTING_RELEASE")
         self.rg2_release()
 
-        # 2. 트레이 전체 상부 Pose로 이동
+        # 2. Z=PLACE_OVERHEAD_Z_MM 고정, 키팅트레이 overhead X·Y·A·B·C로 수평 이동
         _step("KITTING_OVERHEAD_MOVE")
-        self.move_linear(profile.overhead_pose, "KITTING_OVERHEAD_MOVE")
+        overhead_safe = CartesianPose(
+            x_mm=profile.overhead_pose.x_mm,
+            y_mm=profile.overhead_pose.y_mm,
+            z_mm=PLACE_OVERHEAD_Z_MM,
+            a_deg=profile.overhead_pose.a_deg,
+            b_deg=profile.overhead_pose.b_deg,
+            c_deg=profile.overhead_pose.c_deg,
+        )
+        self.move_linear(overhead_safe, "KITTING_OVERHEAD_MOVE")
 
-        # 3. 상부 Pose → Pick Pose: Z와 A/B/C를 한 번의 movel에서 동시에 변경
+        # 3. overhead → pick_pose 수직 하강: Z 하강하면서 A·B·C도 pick_pose 좌표로 동시 변경
         _step("KITTING_PICK_DESCEND")
         self.move_linear(profile.pick_pose, "KITTING_PICK_DESCEND")
 
