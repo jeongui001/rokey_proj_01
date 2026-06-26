@@ -1,0 +1,73 @@
+{
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target"
+		],
+		"files" : 
+		[
+			"/home/youngjin/rokey_proj_01/build/cobot1_interfaces/cobot1_interfaces__rs/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 35,
+				"parent" : 0
+			}
+		]
+	},
+	"id" : "cobot1_interfaces__rs::@d5ab1da826582cc6baa4",
+	"name" : "cobot1_interfaces__rs",
+	"paths" : 
+	{
+		"build" : "cobot1_interfaces__rs",
+		"source" : "/home/youngjin/rokey_proj_01/build/cobot1_interfaces/cobot1_interfaces__rs"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "CMake Rules",
+			"sourceIndexes" : 
+			[
+				1,
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"isGenerated" : true,
+			"path" : "/home/youngjin/rokey_proj_01/build/cobot1_interfaces/cobot1_interfaces__rs/CMakeFiles/cobot1_interfaces__rs",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "/home/youngjin/rokey_proj_01/build/cobot1_interfaces/cobot1_interfaces__rs/CMakeFiles/cobot1_interfaces__rs.rule",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 0,
+			"isGenerated" : true,
+			"path" : "/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_rs/cobot1_interfaces/rust/src/lib.rs.rule",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "UTILITY"
+}

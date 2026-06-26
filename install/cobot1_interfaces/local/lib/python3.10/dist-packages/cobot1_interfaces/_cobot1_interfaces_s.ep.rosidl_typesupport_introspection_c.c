@@ -1,0 +1,1 @@
+/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_py/cobot1_interfaces/_cobot1_interfaces_s.ep.rosidl_typesupport_introspection_c.c

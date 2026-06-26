@@ -1,0 +1,11 @@
+{
+  "package_name": "cobot1_interfaces",
+  "non_idl_tuples": [
+    "/home/youngjin/rokey_proj_01/src/cobot1_interfaces:msg/WebcamError.msg",
+    "/home/youngjin/rokey_proj_01/src/cobot1_interfaces:msg/ExpectedModel.msg",
+    "/home/youngjin/rokey_proj_01/src/cobot1_interfaces:msg/BlockTask.msg",
+    "/home/youngjin/rokey_proj_01/src/cobot1_interfaces:srv/ProcessMosaic.srv",
+    "/home/youngjin/rokey_proj_01/src/cobot1_interfaces:srv/SequencePlan.srv",
+    "/home/youngjin/rokey_proj_01/src/cobot1_interfaces:action/Assembly.action"
+  ]
+}

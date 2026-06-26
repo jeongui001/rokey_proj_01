@@ -1,0 +1,1 @@
+/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_rs/cobot1_interfaces/rust/src/lib.rs

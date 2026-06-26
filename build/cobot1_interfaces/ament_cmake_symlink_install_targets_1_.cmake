@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_py/cobot1_interfaces/cobot1_interfaces_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so" "TARGETS" "cobot1_interfaces__rosidl_typesupport_introspection_c__pyext" "DESTINATION" "local/lib/python3.10/dist-packages/cobot1_interfaces")

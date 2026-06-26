@@ -48,8 +48,8 @@ HOME_JOINT_DEG = [
 
 # 블록 적층 피치
 BLOCK_HEIGHT_MM = 19.0
-ASSEMBLY_CLEARANCE_MM = 0.5
-STACK_PITCH_MM = BLOCK_HEIGHT_MM + ASSEMBLY_CLEARANCE_MM  # 19.5 mm
+ASSEMBLY_CLEARANCE_MM = 1.0
+STACK_PITCH_MM = BLOCK_HEIGHT_MM + ASSEMBLY_CLEARANCE_MM  # 20 mm
 
 # 관절 이동 속도·가속도 (단위: %)
 JOINT_VELOCITY = 60.0
@@ -226,8 +226,8 @@ KITTING_TRAY_PROFILES = {
             profile_id="yellow_2x2",
             color="yellow",
             block_type="2x2",
-            overhead_pose=(203.26, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(203.26, -97.78,  15.80, 90.00, -153.04, 90.38),
+            overhead_pose=CartesianPose(203.26, -97.78, 270.22, 89.97, -179.68, 90.34),
+            pick_pose=CartesianPose(203.26, -97.78,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
@@ -235,7 +235,7 @@ KITTING_TRAY_PROFILES = {
             color="yellow",
             block_type="3x2",
             overhead_pose=CartesianPose(256.98, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(256.98, -97.78,  15.80, 90.00, -153.04, 90.38),
+            pick_pose=CartesianPose(256.98, -107.3,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -245,7 +245,7 @@ KITTING_TRAY_PROFILES = {
             color="red",
             block_type="2x2",
             overhead_pose=CartesianPose(308.64, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(308.64, -97.78,  15.80, 90.00, -153.04, 90.38),
+            pick_pose=CartesianPose(308.64, -97.78,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
@@ -253,7 +253,7 @@ KITTING_TRAY_PROFILES = {
             color="red",
             block_type="3x2",
             overhead_pose=CartesianPose(361.50, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(361.50, -97.78,  15.80, 90.00, -153.04, 90.38),
+            pick_pose=CartesianPose(361.50, -107.3,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -263,7 +263,7 @@ KITTING_TRAY_PROFILES = {
             color="blue",
             block_type="2x2",
             overhead_pose=CartesianPose(438.19, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(438.19, -97.78,  15.80, 90.00, -153.04, 90.38),
+            pick_pose=CartesianPose(438.19, -97.78,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
@@ -271,7 +271,7 @@ KITTING_TRAY_PROFILES = {
             color="blue",
             block_type="3x2",
             overhead_pose=CartesianPose(491.30, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(491.30, -97.78,  15.80, 90.00, -153.04, 90.38),
+            pick_pose=CartesianPose(491.30, -107.3,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -281,7 +281,7 @@ KITTING_TRAY_PROFILES = {
             color="green",
             block_type="2x2",
             overhead_pose=CartesianPose(545.08, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(545.08, -97.78,  15.80, 90.00, -153.04, 90.38),
+            pick_pose=CartesianPose(545.08, -97.78,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         # 임시: 초록 3x2 트레이로 사용. 실제 초록 3x2 트레이 티칭 후 좌표 업데이트 필요.
@@ -290,7 +290,7 @@ KITTING_TRAY_PROFILES = {
             color="green",
             block_type="3x2",
             overhead_pose=CartesianPose(600.19, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(600.19, -97.78,  15.80, 90.00, -153.04, 90.38),
+            pick_pose=CartesianPose(600.19, -107.3,  15.80, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },
@@ -807,6 +807,8 @@ class RobotControllerNode(Node):
                 self.get_logger().info("홈 이동 중...")
                 self._motion_controller.move_home()
 
+            stack_counter: dict = {}
+
             for current_index, task_msg in enumerate(tasks):
                 if goal_handle.is_cancel_requested:
                     result.error_message = '사용자에 의해 취소됨'
@@ -817,15 +819,19 @@ class RobotControllerNode(Node):
                 block_type_str = determine_block_type(task_msg.block_type)
                 place_y_mm = float(task_msg.y_position)
 
+                stack_index = stack_counter.get(place_y_mm, 0)
+                stack_counter[place_y_mm] = stack_index + 1
+
                 self.get_logger().info(
                     f"[{current_index+1}/{total_count}] "
-                    f"color={normalized_color}, type={block_type_str}, y={place_y_mm:.2f}")
+                    f"color={normalized_color}, type={block_type_str}, "
+                    f"y={place_y_mm:.2f}, stack={stack_index}")
 
                 pick_task = PickPlaceTask(
                     color=normalized_color,
                     block_type_str=block_type_str,
                     place_y_mm=place_y_mm,
-                    stack_index=0,
+                    stack_index=stack_index,
                 )
 
                 # 클로저 기본 인수로 반복 변수 캡처 (파이썬 late binding 방지)

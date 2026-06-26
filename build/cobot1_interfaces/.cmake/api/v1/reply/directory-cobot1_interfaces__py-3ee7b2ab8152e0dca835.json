@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "cobot1_interfaces__py",
+		"source" : "/home/youngjin/rokey_proj_01/build/cobot1_interfaces/cobot1_interfaces__py"
+	}
+}

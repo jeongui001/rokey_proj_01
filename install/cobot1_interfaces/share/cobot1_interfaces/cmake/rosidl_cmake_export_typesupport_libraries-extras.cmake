@@ -1,0 +1,1 @@
+/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
