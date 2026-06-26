@@ -36,12 +36,6 @@ def generate_launch_description():
         ),
         Node(
             package='cobot1',
-            executable='webcam_node',
-            name='webcam',
-            output='screen',
-        ),
-        Node(
-            package='cobot1',
             executable='camera_node',
             name='camera',
             output='screen',
