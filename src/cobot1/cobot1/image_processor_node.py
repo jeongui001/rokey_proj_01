@@ -13,46 +13,79 @@ from sensor_msgs.msg import Image
 
 from cobot1.vision_core.config import load_vision_config
 from cobot1.vision_core.grid_projection import merge_blocks, quantize_image_to_grid
-from cobot1.vision_core.mosaic import fit_image, preview_size_for_cell_aspect, render_cells
+from cobot1.vision_core.mosaic import (
+    DEFAULT_CELL_ASPECT_HEIGHT,
+    DEFAULT_CELL_ASPECT_WIDTH,
+    DEFAULT_GRID_COLS,
+    DEFAULT_GRID_ROWS,
+    fit_image,
+    preview_size_for_cell_aspect,
+    render_cells,
+)
 from cobot1.vision_core.overlay import draw_grid_overlay
 from cobot1.vision_core.palette import Palette
 from cobot1_interfaces.srv import ProcessMosaic
 
-SERVICE_NAME = '/image/analyze'
-FITTED_TOPIC = '/vision/source/fitted'
-OVERLAY_TOPIC = '/vision/source/overlay'
-MOSAIC_TOPIC = '/vision/mosaic'
-DEFAULT_GRID_ROWS = 10
-DEFAULT_GRID_COLS = 10
-CELL_ASPECT_WIDTH = 15.9
-CELL_ASPECT_HEIGHT = 38.0
-
 
 class ImageProcessorNode(Node):
-    """Quantize an input image and return a colour grid."""
+    """Quantize an input image into a front-view brick grid."""
 
     def __init__(self) -> None:
         super().__init__('image_processor')
         self._callback_group = ReentrantCallbackGroup()
         self._bridge = CvBridge()
 
-        config_file = os.path.join(
-            get_package_share_directory('cobot1'), 'config', 'vision.yaml')
+        self.declare_parameter('vision_config_file', '')
+        self.declare_parameter('service_name', '/image/analyze')
+        self.declare_parameter('fitted_topic', '/vision/source/fitted')
+        self.declare_parameter('overlay_topic', '/vision/source/overlay')
+        self.declare_parameter('mosaic_topic', '/vision/mosaic')
+        self.declare_parameter('grid_rows', DEFAULT_GRID_ROWS)
+        self.declare_parameter('grid_cols', DEFAULT_GRID_COLS)
+        self.declare_parameter('cell_aspect_width', DEFAULT_CELL_ASPECT_WIDTH)
+        self.declare_parameter('cell_aspect_height', DEFAULT_CELL_ASPECT_HEIGHT)
+
+        config_file = str(self.get_parameter('vision_config_file').value).strip()
+        if not config_file:
+            config_file = os.path.join(
+                get_package_share_directory('cobot1'), 'config', 'vision.yaml'
+            )
         self._config = load_vision_config(config_file)
         self._palette = Palette.from_config(self._config)
         self._projection_config = dict(self._config.get('grid_projection', {}))
 
-        self._fitted_publisher = self.create_publisher(Image, FITTED_TOPIC, 1)
-        self._overlay_publisher = self.create_publisher(Image, OVERLAY_TOPIC, 1)
-        self._mosaic_publisher = self.create_publisher(Image, MOSAIC_TOPIC, 1)
+        self._fitted_publisher = self.create_publisher(
+            Image, str(self.get_parameter('fitted_topic').value), 1
+        )
+        self._overlay_publisher = self.create_publisher(
+            Image, str(self.get_parameter('overlay_topic').value), 1
+        )
+        self._mosaic_publisher = self.create_publisher(
+            Image, str(self.get_parameter('mosaic_topic').value), 1
+        )
         self._service = self.create_service(
             ProcessMosaic,
-            SERVICE_NAME,
+            str(self.get_parameter('service_name').value),
             self._process_request,
             callback_group=self._callback_group,
         )
 
-        self.get_logger().info(f'ImageProcessor ready: service={SERVICE_NAME}')
+        self.get_logger().info(
+            'ImageProcessor ready: backend=palette_quantization, '
+            f'grid={self.get_parameter("grid_cols").value}x{self.get_parameter("grid_rows").value}, '
+            f'service={self.get_parameter("service_name").value}'
+        )
+
+    def _grid_settings(self) -> tuple[int, int, float, float]:
+        grid_rows = int(self.get_parameter('grid_rows').value)
+        grid_cols = int(self.get_parameter('grid_cols').value)
+        cell_aspect_width = float(self.get_parameter('cell_aspect_width').value)
+        cell_aspect_height = float(self.get_parameter('cell_aspect_height').value)
+        if grid_rows < 1 or grid_cols < 1:
+            raise ValueError('grid_rows and grid_cols must be at least 1.')
+        if cell_aspect_width <= 0.0 or cell_aspect_height <= 0.0:
+            raise ValueError('cell_aspect_width and cell_aspect_height must be positive.')
+        return grid_rows, grid_cols, cell_aspect_width, cell_aspect_height
 
     def _process_request(
         self,
@@ -61,8 +94,7 @@ class ImageProcessorNode(Node):
     ) -> ProcessMosaic.Response:
         try:
             source = self._bridge.imgmsg_to_cv2(request.input_image, desired_encoding='bgr8')
-            grid_rows = int(request.grid_rows) if request.grid_rows > 0 else DEFAULT_GRID_ROWS
-            grid_cols = int(request.grid_cols) if request.grid_cols > 0 else DEFAULT_GRID_COLS
+            grid_rows, grid_cols, cell_aspect_width, cell_aspect_height = self._grid_settings()
             mosaic_config = self._config.get('mosaic', {})
             max_grid_size = int(mosaic_config.get('max_grid_size', 64))
             if max(grid_rows, grid_cols) > max_grid_size:
@@ -73,8 +105,8 @@ class ImageProcessorNode(Node):
             output_width, output_height = preview_size_for_cell_aspect(
                 grid_rows,
                 grid_cols,
-                CELL_ASPECT_WIDTH,
-                CELL_ASPECT_HEIGHT,
+                cell_aspect_width,
+                cell_aspect_height,
                 int(mosaic_config.get('default_output_height', 512)),
             )
             empty_rgb = self._palette.empty_entry(
@@ -131,7 +163,8 @@ class ImageProcessorNode(Node):
             response.message = (
                 f'Palette-quantized {grid_cols}x{grid_rows} grid with '
                 f'{sum(1 for cell in cells if cell.occupied)} occupied cells and '
-                f'{len(blocks)} merged block candidates.'
+                f'{len(blocks)} merged block candidates; '
+                f'cell aspect={cell_aspect_width:g}:{cell_aspect_height:g}.'
             )
             response.colors = [cell.color if cell.occupied else 'empty' for cell in cells]
 

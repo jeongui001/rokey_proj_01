@@ -8,9 +8,9 @@ import numpy as np
 from .models import CellSample
 
 DEFAULT_GRID_ROWS = 10
-DEFAULT_GRID_COLS = 10
+DEFAULT_GRID_COLS = 24
 DEFAULT_CELL_ASPECT_WIDTH = 15.9
-DEFAULT_CELL_ASPECT_HEIGHT = 38.0
+DEFAULT_CELL_ASPECT_HEIGHT = 19.0
 
 
 def validate_bgr_image(image: np.ndarray) -> None:

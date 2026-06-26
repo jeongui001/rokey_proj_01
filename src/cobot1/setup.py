@@ -27,7 +27,6 @@ setup(
             'sequencer_node = cobot1.sequencer_node:main',
             'robot_controller_node = cobot1.robot_controller_node:main',
             'verify_node = cobot1.verify_node:main',
-            'webcam_node = cobot1.webcam_node:main',
             'camera_node = cobot1.camera_node:main',
         ],
     },
