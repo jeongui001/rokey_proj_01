@@ -15,8 +15,7 @@ class SequencerNode(Node):
         self.declare_parameter('grid_width', 10)
         self.declare_parameter('grid_height', 10)
         self.declare_parameter('start_x', 332.0)
-        self.declare_parameter('start_y_type1', 310.0)
-        self.declare_parameter('start_y_type2', 302.05)
+        self.declare_parameter('y_col0', 317.95)      # col=0 셀 중심 Y (mm)
         self.declare_parameter('cell_pitch', 15.9)
         self.declare_parameter('beam_width', 5)
         self.declare_parameter('empty_color', 'empty')
@@ -49,7 +48,7 @@ class SequencerNode(Node):
             empty_color = self.get_parameter('empty_color').value
             row_blocks = self._match_blocks(
                 grid, grid_width, grid_height, empty_color)
-            tasks = self._build_tasks(row_blocks, grid_width, grid_height)
+            tasks = self._build_tasks(row_blocks, grid_height)
 
             response.tasks = tasks
             response.error_message = ''
@@ -198,11 +197,10 @@ class SequencerNode(Node):
         self.get_logger().info(f'블록 매칭 완료: loss={best_loss}')
         return best_rd
 
-    # ── BlockTask 생성 (지그재그 + Y좌표) ──
+    # ── BlockTask 생성 (좌→우, 아래→위) ──
 
-    def _build_tasks(self, row_blocks, grid_width, grid_height):
-        start_y_t1 = self.get_parameter('start_y_type1').value
-        start_y_t2 = self.get_parameter('start_y_type2').value
+    def _build_tasks(self, row_blocks, grid_height):
+        y_col0 = self.get_parameter('y_col0').value
         pitch = self.get_parameter('cell_pitch').value
         tasks = []
 
@@ -212,48 +210,14 @@ class SequencerNode(Node):
             if not blocks:
                 continue
 
-            y_pos = self._y_positions(blocks, start_y_t1, start_y_t2, pitch, grid_width)
-
-            order = list(range(len(blocks)))
-            if layer % 2 == 1:
-                order = list(reversed(order))
-
-            for i in order:
-                _, _, color, btype = blocks[i]
+            for col_start, width, color, btype in blocks:
                 task = BlockTask()
                 task.color = color
                 task.block_type = btype
-                task.y_position = y_pos[i]
+                task.y_position = y_col0 - (col_start + (width - 1) / 2) * pitch
                 tasks.append(task)
 
         return tasks
-
-    # ── Y좌표 계산 ──
-
-    @staticmethod
-    def _y_positions(blocks, start_y_t1, start_y_t2, pitch, grid_width):
-        n = len(blocks)
-        if n == 0:
-            return []
-
-        y = [0.0] * n
-        rblock = blocks[-1]
-        right_gap = grid_width - (rblock[0] + rblock[1])
-        y[-1] = (start_y_t1 if rblock[3] == 1 else start_y_t2) - right_gap * pitch
-
-        for i in range(n - 2, -1, -1):
-            prev_type = blocks[i + 1][3]
-            curr_type = blocks[i][3]
-            if prev_type == curr_type == 1:
-                factor = 2.0
-            elif prev_type == curr_type == 2:
-                factor = 3.0
-            else:
-                factor = 2.5
-            gap = blocks[i + 1][0] - (blocks[i][0] + blocks[i][1])
-            y[i] = y[i + 1] - pitch * (factor + gap)
-
-        return y
 
 
 def main(args=None):
