@@ -1,0 +1,33 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/action/detail/assembly__type_support.c.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/action/detail/assembly__type_support.c.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/block_task__type_support.c.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/block_task__type_support.c.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/expected_model__type_support.c.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/expected_model__type_support.c.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/webcam_error__type_support.c.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/webcam_error__type_support.c.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/process_mosaic__type_support.c.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/process_mosaic__type_support.c.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/sequence_plan__type_support.c.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/sequence_plan__type_support.c.o.d"
+  "libcobot1_interfaces__rosidl_typesupport_introspection_c.pdb"
+  "libcobot1_interfaces__rosidl_typesupport_introspection_c.so"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/action/detail/assembly__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/action/detail/assembly__type_support.c"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/block_task__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/block_task__type_support.c"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/expected_model__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/expected_model__type_support.c"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/webcam_error__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/msg/detail/webcam_error__type_support.c"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/process_mosaic__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/process_mosaic__type_support.c"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/sequence_plan__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/cobot1_interfaces/srv/detail/sequence_plan__type_support.c"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/cobot1_interfaces__rosidl_typesupport_introspection_c.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

@@ -1,0 +1,33 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/action/detail/dds_fastrtps/assembly__type_support.cpp.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/action/detail/dds_fastrtps/assembly__type_support.cpp.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/block_task__type_support.cpp.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/block_task__type_support.cpp.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/expected_model__type_support.cpp.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/expected_model__type_support.cpp.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/webcam_error__type_support.cpp.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/webcam_error__type_support.cpp.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/dds_fastrtps/process_mosaic__type_support.cpp.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/dds_fastrtps/process_mosaic__type_support.cpp.o.d"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/dds_fastrtps/sequence_plan__type_support.cpp.o"
+  "CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/dds_fastrtps/sequence_plan__type_support.cpp.o.d"
+  "libcobot1_interfaces__rosidl_typesupport_fastrtps_cpp.pdb"
+  "libcobot1_interfaces__rosidl_typesupport_fastrtps_cpp.so"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/action/detail/assembly__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/action/detail/dds_fastrtps/assembly__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/block_task__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/block_task__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/expected_model__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/dds_fastrtps/webcam_error__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/expected_model__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/msg/detail/webcam_error__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/dds_fastrtps/process_mosaic__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/dds_fastrtps/sequence_plan__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/process_mosaic__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/cobot1_interfaces/srv/detail/sequence_plan__rosidl_typesupport_fastrtps_cpp.hpp"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/cobot1_interfaces__rosidl_typesupport_fastrtps_cpp.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

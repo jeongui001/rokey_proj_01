@@ -1,0 +1,1 @@
+/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_py/cobot1_interfaces/msg/_webcam_error.py

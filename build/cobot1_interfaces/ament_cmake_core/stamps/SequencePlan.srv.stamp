@@ -1,0 +1,6 @@
+string[] colors
+uint32 grid_width
+uint32 grid_height
+---
+string error_message
+cobot1_interfaces/BlockTask[] tasks

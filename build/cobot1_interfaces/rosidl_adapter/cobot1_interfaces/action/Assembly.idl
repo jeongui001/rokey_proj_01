@@ -1,0 +1,21 @@
+// generated from rosidl_adapter/resource/action.idl.em
+// with input from cobot1_interfaces/action/Assembly.action
+// generated code does not contain a copyright notice
+
+#include "cobot1_interfaces/msg/BlockTask.idl"
+
+module cobot1_interfaces {
+  module action {
+    struct Assembly_Goal {
+      sequence<cobot1_interfaces::msg::BlockTask> tasks;
+    };
+    struct Assembly_Result {
+      int32 failed_step;
+
+      string error_message;
+    };
+    struct Assembly_Feedback {
+      int32 current_index;
+    };
+  };
+};

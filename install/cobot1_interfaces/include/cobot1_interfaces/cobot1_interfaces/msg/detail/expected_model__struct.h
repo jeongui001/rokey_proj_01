@@ -1,0 +1,1 @@
+/home/youngjin/rokey_proj_01/build/cobot1_interfaces/rosidl_generator_c/cobot1_interfaces/msg/detail/expected_model__struct.h

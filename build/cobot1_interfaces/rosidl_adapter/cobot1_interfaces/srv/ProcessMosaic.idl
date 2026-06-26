@@ -1,0 +1,24 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from cobot1_interfaces/srv/ProcessMosaic.srv
+// generated code does not contain a copyright notice
+
+#include "sensor_msgs/msg/Image.idl"
+
+module cobot1_interfaces {
+  module srv {
+    struct ProcessMosaic_Request {
+      sensor_msgs::msg::Image input_image;
+
+      uint32 grid_rows;
+
+      uint32 grid_cols;
+    };
+    struct ProcessMosaic_Response {
+      boolean success;
+
+      string message;
+
+      sequence<string> colors;
+    };
+  };
+};
