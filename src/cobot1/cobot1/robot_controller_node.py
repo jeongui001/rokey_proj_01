@@ -65,6 +65,24 @@ PLACE_LINEAR_VELOCITY: List[float] = [20.0, 15.0]
 PLACE_LINEAR_ACCELERATION: List[float] = [20.0, 15.0]
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Force 제어 설정 — PLACE_DESCEND(블록 삽입 하강) 전용
+# ─────────────────────────────────────────────────────────────────────────────
+# Z축 목표 힘 (N): 블록을 삽입할 때 아래 방향으로 가하는 힘. 너무 크면 블록/트레이 파손.
+PLACE_FORCE_Z_N: float = 5.0
+
+# Z축 강성 (N/m): 낮을수록 Z 방향이 유연. 권장 범위 200~500. 값 높이면 힘이 빠르게 쌓임.
+PLACE_Z_STIFFNESS: float = 200.0
+
+# XY축 강성 (N/m): 높을수록 X·Y 위치 고정. 권장 범위 3000~5000.
+PLACE_XY_STIFFNESS: float = 3000.0
+
+# 회전축 강성 (Nm/rad): 낮을수록 자세가 유연. 권장 범위 200~500.
+PLACE_ROT_STIFFNESS: float = 200.0
+
+# Z 하한 보호 오프셋 (mm): actual_place_z - 이 값 이하로 내려가지 않음. 블록·트레이 보호.
+PLACE_FORCE_Z_LIMIT_OFFSET_MM: float = 3.0
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 3. RG2 설정
 # ─────────────────────────────────────────────────────────────────────────────
 # Pick 하강 완료 후 그립 전 대기 (초)
@@ -211,9 +229,10 @@ class KittingTrayProfile:
     profile_id: str           # 유일한 내부 식별자
     color: str                # 정규화된 색상 (영문)
     block_type: str           # "2x2" 또는 "3x2"
-    overhead_pose: CartesianPose   # 트레이 상부 대기 Pose
-    pick_pose: CartesianPose       # 블록 파지 직전 Pose
-    tool_retract_z_mm: float       # Pick 후 Tool 기준 +Z 인출 거리 (mm)
+    overhead_pose: CartesianPose        # 트레이 상부 대기 Pose
+    pick_pose: CartesianPose            # 블록 파지 직전 Pose
+    tool_retract_z_mm: float            # Pick 후 Tool 기준 +Z 인출 거리 (mm)
+    waypoint_pose: Optional[CartesianPose] = None  # 경유점 (None이면 직접 이동, 원거리 트레이용)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -284,6 +303,7 @@ KITTING_TRAY_PROFILES = {
             overhead_pose=CartesianPose(603.24, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(603.24, -101.5,  16.50, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
+            waypoint_pose=CartesianPose(550.0, -97.78, 270.0, 89.97, -179.68, 90.34),
         ),
         # 임시: 초록 3x2 트레이로 사용. 실제 초록 3x2 트레이 티칭 후 좌표 업데이트 필요.
         "3x2": KittingTrayProfile(
@@ -293,6 +313,7 @@ KITTING_TRAY_PROFILES = {
             overhead_pose=CartesianPose(658.35, -97.78, 270.22, 89.97, -179.68, 90.34),
             pick_pose=CartesianPose(658.35, -110.0,  17.0, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
+            waypoint_pose=CartesianPose(550.0, -97.78, 270.0, 89.97, -179.68, 90.34),
         ),
     },
 }
@@ -363,6 +384,10 @@ class RobotMotionController:
             set_tcp,
             set_tool,
             add_tool,
+            task_compliance_ctrl,
+            release_compliance_ctrl,
+            set_desired_force,
+            DR_FC_MOD_ABS,
         )
         from DR_common2 import posj
 
@@ -384,6 +409,10 @@ class RobotMotionController:
         self._get_digital_input = get_digital_input
         self._ON = ON
         self._OFF = OFF
+        self._task_compliance_ctrl = task_compliance_ctrl
+        self._release_compliance_ctrl = release_compliance_ctrl
+        self._set_desired_force = set_desired_force
+        self._DR_FC_MOD_ABS = DR_FC_MOD_ABS
 
         self._logger.info("RobotMotionController 초기화 완료")
 
@@ -554,7 +583,18 @@ class RobotMotionController:
         self.rg2_release()
 
         # 2. Z=PLACE_OVERHEAD_Z_MM 고정, 키팅트레이 overhead X·Y·A·B·C로 수평 이동
+        #    경유점이 있으면 먼저 경유 후 overhead로 이동 (원거리 트레이 관절 한계 회피)
         _step("KITTING_OVERHEAD_MOVE")
+        if profile.waypoint_pose is not None:
+            waypoint_safe = CartesianPose(
+                x_mm=profile.waypoint_pose.x_mm,
+                y_mm=profile.waypoint_pose.y_mm,
+                z_mm=PLACE_OVERHEAD_Z_MM,
+                a_deg=profile.waypoint_pose.a_deg,
+                b_deg=profile.waypoint_pose.b_deg,
+                c_deg=profile.waypoint_pose.c_deg,
+            )
+            self.move_linear(waypoint_safe, "KITTING_WAYPOINT_MOVE")
         overhead_safe = CartesianPose(
             x_mm=profile.overhead_pose.x_mm,
             y_mm=profile.overhead_pose.y_mm,
@@ -584,9 +624,19 @@ class RobotMotionController:
             "KITTING_TOOL_Z_RETRACT",
         )
 
-        # 7. 해당 트레이의 전체 상부 Pose로 정확히 복귀 (get_current_posx 사용 안 함)
+        # 7. 해당 트레이의 전체 상부 Pose로 복귀 후 경유점 있으면 경유
         _step("KITTING_RETURN_OVERHEAD")
         self.move_linear(profile.overhead_pose, "KITTING_RETURN_OVERHEAD")
+        if profile.waypoint_pose is not None:
+            waypoint_safe = CartesianPose(
+                x_mm=profile.waypoint_pose.x_mm,
+                y_mm=profile.waypoint_pose.y_mm,
+                z_mm=PLACE_OVERHEAD_Z_MM,
+                a_deg=profile.waypoint_pose.a_deg,
+                b_deg=profile.waypoint_pose.b_deg,
+                c_deg=profile.waypoint_pose.c_deg,
+            )
+            self.move_linear(waypoint_safe, "KITTING_RETURN_WAYPOINT")
 
         self._logger.info(
             f"[color={task.color}] 키팅 Pick 완료: profile={profile.profile_id}"
@@ -649,28 +699,45 @@ class RobotMotionController:
             c_deg=PLACE_C_DEG,
         )
 
-        # 실제 Place Pose: 고정 X, Goal Y, 계산된 Z, 고정 A/B/C
-        actual_place_pose = CartesianPose(
-            x_mm=PLACE_FIXED_X_MM,
-            y_mm=place_y_mm,
-            z_mm=actual_place_z,
-            a_deg=PLACE_A_DEG,
-            b_deg=PLACE_B_DEG,
-            c_deg=PLACE_C_DEG,
-        )
-
         # 1. Place 상부 Pose로 이동
         _step("TARGET_OVERHEAD_MOVE")
         self.move_linear(place_overhead_pose, "TARGET_OVERHEAD_MOVE")
 
-        # 2. 저속으로 실제 Place Pose까지 하강 (위치 제어, 힘 제어 없음)
+        # 2. Force 제어로 블록 삽입 하강
+        #    Z 하한 보호: actual_place_z - PLACE_FORCE_Z_LIMIT_OFFSET_MM 이하로 안 내려감
         _step("PLACE_DESCEND")
+        z_lower_limit = actual_place_z - PLACE_FORCE_Z_LIMIT_OFFSET_MM
+        force_place_pose = CartesianPose(
+            x_mm=PLACE_FIXED_X_MM,
+            y_mm=place_y_mm,
+            z_mm=max(actual_place_z, z_lower_limit),
+            a_deg=PLACE_A_DEG,
+            b_deg=PLACE_B_DEG,
+            c_deg=PLACE_C_DEG,
+        )
+        self._task_compliance_ctrl(
+            stx=[
+                PLACE_XY_STIFFNESS,   # X
+                PLACE_XY_STIFFNESS,   # Y
+                PLACE_Z_STIFFNESS,    # Z (유연)
+                PLACE_ROT_STIFFNESS,  # Rx
+                PLACE_ROT_STIFFNESS,  # Ry
+                PLACE_ROT_STIFFNESS,  # Rz
+            ]
+        )
+        self._set_desired_force(
+            fd=[0.0, 0.0, -PLACE_FORCE_Z_N, 0.0, 0.0, 0.0],
+            dir=[0, 0, 1, 0, 0, 0],
+            time=0,
+            mod=self._DR_FC_MOD_ABS,
+        )
         self.move_linear(
-            actual_place_pose,
+            force_place_pose,
             "PLACE_DESCEND",
             vel=PLACE_LINEAR_VELOCITY,
             acc=PLACE_LINEAR_ACCELERATION,
         )
+        self._release_compliance_ctrl()
 
         # 3. RG2 release (Digital I/O — wait_digital_input으로 완료 대기)
         _step("PLACE_RELEASE")
