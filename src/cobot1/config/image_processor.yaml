@@ -1,0 +1,10 @@
+/**:
+  ros__parameters:
+    service_name: /image/analyze
+    fitted_topic: /vision/source/fitted
+    overlay_topic: /vision/source/overlay
+    mosaic_topic: /vision/mosaic
+    grid_rows: 8
+    grid_cols: 16
+    cell_aspect_width: 15.9
+    cell_aspect_height: 19.0

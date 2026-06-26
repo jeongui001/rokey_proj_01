@@ -15,21 +15,20 @@ from cobot1.vision_core.config import load_vision_config
 from cobot1.vision_core.grid_projection import merge_blocks, quantize_image_to_grid
 from cobot1.vision_core.mosaic import fit_image, preview_size_for_cell_aspect, render_cells
 from cobot1.vision_core.overlay import draw_grid_overlay
-from cobot1.vision_core.palette import Palette
 from cobot1_interfaces.srv import ProcessMosaic
 
 SERVICE_NAME = '/image/analyze'
 FITTED_TOPIC = '/vision/source/fitted'
 OVERLAY_TOPIC = '/vision/source/overlay'
 MOSAIC_TOPIC = '/vision/mosaic'
-DEFAULT_GRID_ROWS = 10
-DEFAULT_GRID_COLS = 10
+DEFAULT_GRID_ROWS = 8
+DEFAULT_GRID_COLS = 16
 CELL_ASPECT_WIDTH = 15.9
-CELL_ASPECT_HEIGHT = 38.0
+CELL_ASPECT_HEIGHT = 19.0
 
 
 class ImageProcessorNode(Node):
-    """Quantize an input image and return a colour grid."""
+    """Quantize an input image into a front-view brick grid."""
 
     def __init__(self) -> None:
         super().__init__('image_processor')
@@ -39,8 +38,18 @@ class ImageProcessorNode(Node):
         config_file = os.path.join(
             get_package_share_directory('cobot1'), 'config', 'vision.yaml')
         self._config = load_vision_config(config_file)
-        self._palette = Palette.from_config(self._config)
         self._projection_config = dict(self._config.get('grid_projection', {}))
+        self._block_palette: dict[str, tuple[int, int, int]] = {}
+        self._empty_rgb: tuple[int, int, int] | None = None
+        for item in self._config.get('palette', {}).get('entries', []):
+            name = str(item['name'])
+            rgb = tuple(int(value) for value in item['rgb'])
+            if bool(item.get('occupied', True)):
+                self._block_palette[name] = rgb
+            elif self._empty_rgb is None or name == 'empty':
+                self._empty_rgb = rgb
+        if self._empty_rgb is None:
+            raise ValueError('palette.entries requires an occupied=false entry.')
 
         self._fitted_publisher = self.create_publisher(Image, FITTED_TOPIC, 1)
         self._overlay_publisher = self.create_publisher(Image, OVERLAY_TOPIC, 1)
@@ -63,6 +72,8 @@ class ImageProcessorNode(Node):
             source = self._bridge.imgmsg_to_cv2(request.input_image, desired_encoding='bgr8')
             grid_rows = int(request.grid_rows) if request.grid_rows > 0 else DEFAULT_GRID_ROWS
             grid_cols = int(request.grid_cols) if request.grid_cols > 0 else DEFAULT_GRID_COLS
+            cell_aspect_width = CELL_ASPECT_WIDTH
+            cell_aspect_height = CELL_ASPECT_HEIGHT
             mosaic_config = self._config.get('mosaic', {})
             max_grid_size = int(mosaic_config.get('max_grid_size', 64))
             if max(grid_rows, grid_cols) > max_grid_size:
@@ -73,22 +84,25 @@ class ImageProcessorNode(Node):
             output_width, output_height = preview_size_for_cell_aspect(
                 grid_rows,
                 grid_cols,
-                CELL_ASPECT_WIDTH,
-                CELL_ASPECT_HEIGHT,
+                cell_aspect_width,
+                cell_aspect_height,
                 int(mosaic_config.get('default_output_height', 512)),
             )
-            empty_rgb = self._palette.empty_entry(
-                str(self._projection_config.get('empty_palette_name', 'empty'))
-            ).rgb
-            letterbox_bgr = (empty_rgb[2], empty_rgb[1], empty_rgb[0])
+            target_aspect = (grid_cols * cell_aspect_width) / (
+                grid_rows * cell_aspect_height
+            )
             fitted = fit_image(
                 source,
                 str(mosaic_config.get('fit_mode', 'center_crop')),
-                letterbox_bgr=letterbox_bgr,
+                target_aspect=target_aspect,
+                smart_crop_min_scale=float(
+                    mosaic_config.get('smart_crop_min_scale', 0.80)
+                ),
             )
             grid, cells = quantize_image_to_grid(
                 fitted,
-                self._palette,
+                self._block_palette,
+                self._empty_rgb,
                 grid_rows,
                 grid_cols=grid_cols,
                 config=self._projection_config,
@@ -129,7 +143,7 @@ class ImageProcessorNode(Node):
 
             response.success = True
             response.message = (
-                f'Palette-quantized {grid_cols}x{grid_rows} grid with '
+                f'Color-mask quantized {grid_cols}x{grid_rows} grid with '
                 f'{sum(1 for cell in cells if cell.occupied)} occupied cells and '
                 f'{len(blocks)} merged block candidates.'
             )
