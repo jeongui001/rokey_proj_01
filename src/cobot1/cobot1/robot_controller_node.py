@@ -460,49 +460,6 @@ class RobotMotionController:
             raise RuntimeError("movej 홈 이동 실패")
         self._mwait()
 
-    def _movel_and_wait(
-        self,
-        pose_arg,
-        *,
-        vel,
-        acc,
-        ref,
-        mod=None,
-        step_name: str,
-    ) -> None:
-        """
-        비동기 movel 후 완료를 50ms 간격으로 폴링하며 대기한다.
-        폴링 중 force_stop_event가 설정되면 RuntimeError를 발생시킨다.
-        """
-        kwargs: dict = dict(vel=vel, acc=acc, ref=ref, _async=1)
-        if mod is not None:
-            kwargs['mod'] = mod
-
-        ret = self._movel(pose_arg, **kwargs)
-        if ret == -1:
-            raise RuntimeError(f"movel 실패: step={step_name}")
-
-        # 컨트롤러가 모션을 큐에 올릴 때까지 짧게 대기
-        time.sleep(0.1)
-
-        seen_busy = False
-        while True:
-            if self._node._force_stop_event.is_set():
-                raise RuntimeError(f"외력 감지 정지: step={step_name}")
-
-            state = self._check_motion()
-            if state == self._DR_STATE_IDLE:
-                if seen_busy:
-                    break
-                # 아직 모션 시작 전일 수 있으니 한 번 더 확인
-                time.sleep(0.05)
-                if self._check_motion() == self._DR_STATE_IDLE:
-                    break
-            else:
-                seen_busy = True
-
-            time.sleep(0.05)
-
     def move_linear(
         self,
         pose: CartesianPose,
@@ -523,13 +480,11 @@ class RobotMotionController:
             f"x={pose.x_mm:.2f}  y={pose.y_mm:.2f}  z={pose.z_mm:.2f}  "
             f"a={pose.a_deg:.2f}  b={pose.b_deg:.2f}  c={pose.c_deg:.2f}"
         )
-        self._movel_and_wait(
-            to_posx(pose),
-            vel=_vel,
-            acc=_acc,
-            ref=self._DR_BASE,
-            step_name=step_name,
-        )
+        ret = self._movel(to_posx(pose), vel=_vel, acc=_acc, ref=self._DR_BASE)
+        if self._node._force_stop_event.is_set():
+            raise RuntimeError(f"외력 감지 정지: step={step_name}")
+        if ret == -1:
+            raise RuntimeError(f"movel 실패: step={step_name}")
 
     def move_relative_tool_z(
         self,
@@ -550,14 +505,17 @@ class RobotMotionController:
         self._logger.info(
             f"Tool Z 상대 이동: step={step_name}, distance={distance_mm:.2f} mm"
         )
-        self._movel_and_wait(
+        ret = self._movel(
             _posx(0.0, 0.0, distance_mm, 0.0, 0.0, 0.0),
             vel=LINEAR_VELOCITY,
             acc=LINEAR_ACCELERATION,
             ref=self._DR_TOOL,
             mod=self._DR_MV_MOD_REL,
-            step_name=step_name,
         )
+        if self._node._force_stop_event.is_set():
+            raise RuntimeError(f"외력 감지 정지: step={step_name}")
+        if ret == -1:
+            raise RuntimeError(f"movel 실패: step={step_name}")
 
     def get_current_cartesian_pose(self) -> CartesianPose:
         """
