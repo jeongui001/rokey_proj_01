@@ -45,6 +45,6 @@ def generate_launch_description():
             executable='webcam_checker_node',
             name='webcam_checker',
             output='screen',
-            parameters=[{'video_device': '/dev/video1'}],
+            parameters=[{'video_device': '/dev/video2'}],
         ),
     ])
