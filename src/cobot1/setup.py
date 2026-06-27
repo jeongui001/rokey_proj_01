@@ -28,6 +28,7 @@ setup(
             'robot_controller_node = cobot1.robot_controller_node:main',
             'verify_node = cobot1.verify_node:main',
             'camera_node = cobot1.camera_node:main',
+            'webcam_checker_node = cobot1.webcam_checker_node:main',
         ],
     },
 )
