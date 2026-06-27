@@ -40,4 +40,11 @@ def generate_launch_description():
             name='camera',
             output='screen',
         ),
+        Node(
+            package='cobot1',
+            executable='webcam_checker_node',
+            name='webcam_checker',
+            output='screen',
+            parameters=[{'video_device': '/dev/video1'}],
+        ),
     ])
