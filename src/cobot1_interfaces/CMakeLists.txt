@@ -15,6 +15,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BlockTask.msg"
   "srv/ProcessMosaic.srv"
   "srv/SequencePlan.srv"
+  "srv/CheckBlock.srv"
   "action/Assembly.action"
   DEPENDENCIES builtin_interfaces std_msgs sensor_msgs geometry_msgs
 )

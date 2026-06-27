@@ -1,0 +1,5 @@
+uint8 block_type   # 1=2x2  2=3x2
+---
+bool passed
+uint8 detected_circles
+string message
