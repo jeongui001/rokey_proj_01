@@ -117,7 +117,9 @@ class WebcamCheckerNode(Node):
         future = self._pause_client.call_async(req)
         done = threading.Event()
         future.add_done_callback(lambda _: done.set())
-        done.wait(timeout=5.0)
+        if not done.wait(timeout=5.0):
+            self.get_logger().error('일시정지 요청 타임아웃 — 로봇 미정지')
+            return
         self.get_logger().info('로봇 일시정지 요청 완료')
 
     def _handle_check(
