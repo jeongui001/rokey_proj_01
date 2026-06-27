@@ -389,6 +389,7 @@ class RobotMotionController:
         from DSR_ROBOT2 import (
             movej,
             movel,
+            amovel,
             wait,
             mwait,
             DR_BASE,
@@ -416,6 +417,7 @@ class RobotMotionController:
 
         self._movej = movej
         self._movel = movel
+        self._amovel = amovel
         self._wait = wait
         self._mwait = mwait
         self._DR_BASE = DR_BASE
@@ -460,10 +462,13 @@ class RobotMotionController:
         *,
         vel: Optional[List[float]] = None,
         acc: Optional[List[float]] = None,
+        async_mode: bool = False,
     ) -> None:
         """
         TCP를 현재 위치에서 pose까지 Base 좌표계 기준 직선으로 이동한다.
         vel/acc를 지정하면 해당 속도를 사용하고, 지정하지 않으면 LINEAR_VELOCITY/ACCELERATION을 사용한다.
+        async_mode=True이면 amovel(비동기)로 큐에 등록 후 즉시 반환한다.
+        연속된 async 호출 후 반드시 self._mwait()으로 완료를 기다려야 한다.
         """
         _vel = vel if vel is not None else LINEAR_VELOCITY
         _acc = acc if acc is not None else LINEAR_ACCELERATION
@@ -473,17 +478,29 @@ class RobotMotionController:
             f"x={pose.x_mm:.2f}  y={pose.y_mm:.2f}  z={pose.z_mm:.2f}  "
             f"a={pose.a_deg:.2f}  b={pose.b_deg:.2f}  c={pose.c_deg:.2f}"
         )
-        ret = self._movel(
-            to_posx(pose),
-            vel=_vel,
-            acc=_acc,
-            ref=self._DR_BASE,
-        )
+
+        if async_mode:
+            # amovel: 컨트롤러가 큐에 등록하고 즉시 응답 → Python 바로 리턴
+            ret = self._amovel(
+                to_posx(pose),
+                vel=_vel,
+                acc=_acc,
+                ref=self._DR_BASE,
+            )
+        else:
+            # movel: 컨트롤러가 이동 완료 후 응답 → Python 블록
+            ret = self._movel(
+                to_posx(pose),
+                vel=_vel,
+                acc=_acc,
+                ref=self._DR_BASE,
+            )
+            self._mwait()
+
         if ret == -1:
             raise RuntimeError(
                 f"movel 실패: step={step_name}, pose={pose}"
             )
-        self._mwait()
 
     def move_relative_tool_z(
         self,
@@ -596,13 +613,8 @@ class RobotMotionController:
             if step_callback is not None:
                 step_callback(name)
 
-        # 1. 그리퍼 열기 (블록을 잡을 수 있도록 준비)
-        _step("KITTING_RELEASE")
-        self.rg2_release()
-
-        # 2. Z=PLACE_OVERHEAD_Z_MM 고정, 키팅트레이 overhead X·Y·A·B·C로 수평 이동
-        #    경유점이 있으면 먼저 경유 후 overhead로 이동 (원거리 트레이 관절 한계 회피)
-        _step("KITTING_OVERHEAD_MOVE")
+        # 경유점 Pose 미리 계산 (waypoint 있을 때만, 이후 pick·return 양쪽에서 재사용)
+        waypoint_safe = None
         if profile.waypoint_pose is not None:
             waypoint_safe = CartesianPose(
                 x_mm=profile.waypoint_pose.x_mm,
@@ -612,8 +624,6 @@ class RobotMotionController:
                 b_deg=profile.waypoint_pose.b_deg,
                 c_deg=profile.waypoint_pose.c_deg,
             )
-            self.move_linear(waypoint_safe, "KITTING_WAYPOINT_MOVE",
-                             vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
         overhead_safe = CartesianPose(
             x_mm=profile.overhead_pose.x_mm,
             y_mm=profile.overhead_pose.y_mm,
@@ -622,8 +632,23 @@ class RobotMotionController:
             b_deg=profile.overhead_pose.b_deg,
             c_deg=profile.overhead_pose.c_deg,
         )
+
+        # 1 & 2. 그리퍼 열기 + 이동을 동시에 실행 (Async 그리퍼 최적화)
+        #   - 이동 명령을 async로 큐에 등록 → DSR 컨트롤러가 즉시 이동 시작
+        #   - Python은 rg2_release() DI 폴링 실행 → 이동과 그리퍼 열기가 병렬 진행
+        #   - 경유점이 있으면 WAYPOINT → OVERHEAD를 연속 async로 큐잉 → Blending (정지 없이 전환)
+        _step("KITTING_RELEASE")
+        if waypoint_safe is not None:
+            _step("KITTING_WAYPOINT_MOVE")
+            self.move_linear(waypoint_safe, "KITTING_WAYPOINT_MOVE",
+                             vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION,
+                             async_mode=True)
+        _step("KITTING_OVERHEAD_MOVE")
         self.move_linear(overhead_safe, "KITTING_OVERHEAD_MOVE",
-                         vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
+                         vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION,
+                         async_mode=True)
+        self.rg2_release()   # DSR 컨트롤러가 이동 중인 동안 Python에서 DI 폴링
+        self._mwait()        # 모든 큐 이동 완료 대기
 
         # 3a. overhead → PICK_APPROACH_Z_MM 고속 하강 (공중 구간)
         _step("KITTING_APPROACH_DESCEND")
@@ -642,9 +667,9 @@ class RobotMotionController:
         _step("KITTING_PICK_DESCEND")
         self.move_linear(profile.pick_pose, "KITTING_PICK_DESCEND")
 
-        # 4. Pick Pose 도달 후 0.3초 정지
+        # 4. Pick Pose 도달 후 웹캠으로 블록 존재 확인
         _step("KITTING_PRE_GRIP_WAIT")
-        self._wait(PICK_PRE_GRIP_WAIT_SEC)
+        self._node._check_block(task.block_type_str)
 
         # 5. RG2 grip (Digital I/O — wait_digital_input으로 완료 대기)
         _step("KITTING_GRIP")
@@ -671,19 +696,19 @@ class RobotMotionController:
         self.move_linear(initial_lift_pose, "KITTING_INITIAL_LIFT")
 
         # 7b. PICK_APPROACH_Z_MM → overhead (Z=270) 고속 상승 (공중 구간)
+        #     경유점이 있으면 RETURN_OVERHEAD → RETURN_WAYPOINT를 Blending으로 정지 없이 연속 이동
         _step("KITTING_RETURN_OVERHEAD")
-        self.move_linear(profile.overhead_pose, "KITTING_RETURN_OVERHEAD",
-                         vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
-        if profile.waypoint_pose is not None:
-            waypoint_safe = CartesianPose(
-                x_mm=profile.waypoint_pose.x_mm,
-                y_mm=profile.waypoint_pose.y_mm,
-                z_mm=PLACE_OVERHEAD_Z_MM,
-                a_deg=profile.waypoint_pose.a_deg,
-                b_deg=profile.waypoint_pose.b_deg,
-                c_deg=profile.waypoint_pose.c_deg,
-            )
+        if waypoint_safe is not None:
+            self.move_linear(profile.overhead_pose, "KITTING_RETURN_OVERHEAD",
+                             vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION,
+                             async_mode=True)
+            _step("KITTING_RETURN_WAYPOINT")
             self.move_linear(waypoint_safe, "KITTING_RETURN_WAYPOINT",
+                             vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION,
+                             async_mode=True)
+            self._mwait()
+        else:
+            self.move_linear(profile.overhead_pose, "KITTING_RETURN_OVERHEAD",
                              vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
 
         self._logger.info(
@@ -885,7 +910,37 @@ class RobotControllerNode(Node):
             callback_group=self._action_callback_group,
         )
 
+        from cobot1_interfaces.srv import CheckBlock as _CheckBlock
+        self._block_checker_client = self.create_client(_CheckBlock, '/webcam/check_block')
+
         self.get_logger().info(f"Action Server 시작: {ACTION_NAME}")
+
+    def _check_block(self, block_type_str: str) -> None:
+        """
+        웹캠 블록 검사 서비스를 동기적으로 호출한다.
+        노드가 이미 MultiThreadedExecutor에서 스핀 중이므로
+        threading.Event로 future 완료를 기다린다.
+        passed=False이면 RuntimeError를 발생시켜 액션을 abort 처리한다.
+        """
+        import threading as _threading
+        from cobot1_interfaces.srv import CheckBlock as _CheckBlock
+
+        _type_map = {"2x2": 1, "3x2": 2}
+        req = _CheckBlock.Request()
+        req.block_type = _type_map[block_type_str]
+
+        future = self._block_checker_client.call_async(req)
+        done = _threading.Event()
+        future.add_done_callback(lambda _: done.set())
+        done.wait(timeout=10.0)
+
+        res = future.result()
+        if res is None:
+            raise RuntimeError("웹캠 서비스 응답 없음 (timeout)")
+        if not res.passed:
+            raise RuntimeError(
+                f"블록 감지 실패 ({res.detected_circles}개 검출): {res.message}"
+            )
 
     def cancel_callback(self, _goal_handle) -> CancelResponse:
         """취소 요청을 항상 수락한다. 실제 중단은 execute_callback 루프에서 처리."""
@@ -1076,3 +1131,4 @@ def main(args=None) -> None:
 
 if __name__ == "__main__":
     main()
+
