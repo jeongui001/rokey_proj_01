@@ -22,8 +22,9 @@ REQUIRED_CIRCLES = {
     2: 6,  # 3x2
 }
 
-# 픽셀 좌표 (x, y, w, h). None이면 전체 이미지 사용. 실측 후 채울 것.
-BLOCK_ROI: dict[int, Optional[tuple[int, int, int, int]]] = {
+# 4점 좌표 [(x1,y1),(x2,y2),(x3,y3),(x4,y4)] 시계 방향 (좌상→우상→우하→좌하).
+# None이면 전체 이미지 사용. roi_check.py 로 측정 후 채울 것.
+BLOCK_ROI: dict[int, Optional[list[tuple[int, int]]]] = {
     1: None,  # 2x2 — TODO
     2: None,  # 3x2 — TODO
 }
@@ -37,15 +38,40 @@ HOUGH_MIN_RADIUS = 5
 HOUGH_MAX_RADIUS = 50
 
 
-def crop_roi(
+def perspective_crop(
     image: np.ndarray,
-    roi: Optional[tuple[int, int, int, int]],
+    pts: Optional[list[tuple[int, int]]],
 ) -> np.ndarray:
-    """ROI가 지정된 경우 크롭, None이면 전체 이미지 반환."""
-    if roi is None:
+    """
+    4점 원근 변환으로 ROI를 정면에서 본 직사각형 이미지로 반환한다.
+    pts는 시계 방향 순서: [좌상, 우상, 우하, 좌하].
+    None이면 전체 이미지를 반환한다.
+    출력 크기는 4점에서 계산한 폭·높이로 결정된다.
+    """
+    if pts is None:
         return image
-    x, y, w, h = roi
-    return image[y:y + h, x:x + w]
+
+    src = np.array(pts, dtype=np.float32)
+    (tl, tr, br, bl) = src
+
+    w = int(max(
+        np.linalg.norm(tr - tl),
+        np.linalg.norm(br - bl),
+    ))
+    h = int(max(
+        np.linalg.norm(bl - tl),
+        np.linalg.norm(br - tr),
+    ))
+
+    dst = np.array([
+        [0,     0    ],
+        [w - 1, 0    ],
+        [w - 1, h - 1],
+        [0,     h - 1],
+    ], dtype=np.float32)
+
+    M = cv2.getPerspectiveTransform(src, dst)
+    return cv2.warpPerspective(image, M, (w, h))
 
 
 def count_circles(image_bgr: np.ndarray) -> int:
@@ -146,7 +172,7 @@ class WebcamCheckerNode(Node):
             return response
 
         roi = BLOCK_ROI.get(block_type)
-        cropped = crop_roi(frame, roi)
+        cropped = perspective_crop(frame, roi)
         detected = count_circles(cropped)
 
         response.detected_circles = min(detected, 255)
