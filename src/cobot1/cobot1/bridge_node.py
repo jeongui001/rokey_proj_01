@@ -11,7 +11,6 @@ from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 import socketio
 from cv_bridge import CvBridge
 
-from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 from cobot1_interfaces.srv import ProcessMosaic, SequencePlan
 from cobot1_interfaces.action import Assembly
@@ -140,9 +139,6 @@ class BridgeNode(Node):
                 'error_message': error_message,
             }, namespace='/bridge')
 
-        def send_force_detected(self):
-            self._sio.emit('force_detected', {}, namespace='/bridge')
-
         def send_block_plan(self, blocks):
             self._sio.emit('block_plan', {
                 'blocks': blocks,
@@ -173,8 +169,6 @@ class BridgeNode(Node):
         # ROS2 구독
         self.webcam_error_sub = self.create_subscription(
             WebcamError, '/webcam/error', self._on_webcam_error, 10)
-        self.force_detected_sub = self.create_subscription(
-            Bool, '/robot/force_detected', self._on_force_detected, 10)
 
         # 내부 상태
         self._bridge = CvBridge()
@@ -365,11 +359,6 @@ class BridgeNode(Node):
             msg.step,
             f'색상 불일치: ({msg.row},{msg.col}) '
             f'{msg.expected_color}→{msg.detected_color}')
-
-    def _on_force_detected(self, msg):
-        if msg.data:
-            self._flask.send_force_detected()
-            self.get_logger().warn('외력 감지 — 브라우저 팝업 전송')
 
     def cancel_assembly(self):
         if self._goal_handle is not None:

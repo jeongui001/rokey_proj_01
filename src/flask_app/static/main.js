@@ -380,19 +380,6 @@ function showBlockSummary(blockInfo) {
   document.getElementById("block-summary").classList.remove("hidden");
 }
 
-// ── 외력 감지 팝업 ──
-
-socket.on("force_detected", () => {
-  document.getElementById("force-modal").classList.remove("hidden");
-  addLog("WARN", "외력 감지 — 로봇 정지. 안전 확인 후 재개하세요.");
-});
-
-document.getElementById("btn-force-resume").addEventListener("click", () => {
-  document.getElementById("force-modal").classList.add("hidden");
-  socket.emit("resume");
-  addLog("INFO", "외력 감지 재개 요청");
-});
-
 // ── 로그 ──
 
 function addLog(level, text) {
