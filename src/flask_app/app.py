@@ -64,20 +64,9 @@ def on_assembly_done(data):
 def on_assembly_error(data):
     socketio.emit('assembly_error', data, namespace='/')
 
-
-# ── 연결 로그 ──
-
-@socketio.on('connect')
-def on_browser_connect():
-    print('[Flask] 브라우저 연결됨')
-
-@socketio.on('connect', namespace='/bridge')
-def on_bridge_connect():
-    print('[Flask] Bridge 노드 연결됨')
-
-@socketio.on('disconnect', namespace='/bridge')
-def on_bridge_disconnect():
-    print('[Flask] Bridge 노드 연결 해제됨')
+@socketio.on('system_log', namespace='/bridge')
+def on_system_log(data):
+    socketio.emit('system_log', data, namespace='/')
 
 
 if __name__ == '__main__':

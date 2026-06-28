@@ -318,9 +318,6 @@ socket.on("assembly_progress", (data) => {
     data.current_step + " / " + data.total_steps;
   document.getElementById("status").textContent =
     "진행 중 — " + data.current_action + " " + data.current_color;
-  addLog("INFO",
-    "Step " + data.current_step + ": " +
-    data.current_action + " " + data.current_color);
 });
 
 socket.on("assembly_done", (data) => {
@@ -335,6 +332,10 @@ socket.on("assembly_error", (data) => {
   document.getElementById("status").textContent =
     "오류 — Step " + data.failed_step;
   addLog("ERROR", "오류: " + data.error_message);
+});
+
+socket.on("system_log", (data) => {
+  addLog("WARN", data.message);
 });
 
 // ── 블록 맵 재구성 ──

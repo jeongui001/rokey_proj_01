@@ -28,7 +28,7 @@ class VerifyNode(Node):
 
         self._expected_colors = []
         self._expected_grid_size = 0
-        self.get_logger().info('VerifyNode 시작 (검증 서비스 미구현)')
+        self.get_logger().info('VerifyNode 시작')
 
     def _on_expected_model(self, msg):
         self._expected_colors = list(msg.colors)
