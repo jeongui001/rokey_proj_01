@@ -582,7 +582,7 @@ class RobotMotionController:
         )
         self.move_linear(
             pose,
-            "REPRESS_DESCEND",
+            "PREPRESS_DESCEND",
             vel=PLACE_LINEAR_VELOCITY,
             acc=PLACE_LINEAR_ACCELERATION,
         )
@@ -1025,7 +1025,6 @@ class RobotControllerNode(Node):
                 self.get_logger().info("홈 이동 중...")
                 self._motion_controller.move_home()
 
-            stack_counter: dict = {}
             placed_blocks: list = []  # (color, place_y_mm, stack_index) — 쌓은 순서대로 기록
 
             for current_index, task_msg in enumerate(tasks):
@@ -1039,9 +1038,7 @@ class RobotControllerNode(Node):
                 normalized_color = normalize_color(task_msg.color)
                 block_type_str = determine_block_type(task_msg.block_type)
                 place_y_mm = float(task_msg.y_position)
-
-                stack_index = stack_counter.get(place_y_mm, 0)
-                stack_counter[place_y_mm] = stack_index + 1
+                stack_index = int(task_msg.layer)
 
                 self.get_logger().info(
                     f"[{current_index+1}/{total_count}] "
@@ -1083,7 +1080,7 @@ class RobotControllerNode(Node):
                     f"역순 결합 해제 시작: {len(placed_blocks)}개 블록"
                 )
 
-                for detach_idx, (color, y, si) in enumerate(reversed(placed_blocks)):
+                for color, y, si in reversed(placed_blocks):
                     self._pause_event.wait()
 
                     if goal_handle.is_cancel_requested:
@@ -1101,19 +1098,6 @@ class RobotControllerNode(Node):
                         c_deg=PLACE_C_DEG,
                     )
 
-                    # si > 0 이면 바로 아래 블록(si-1, 같은 Y열)을 재결합 누르기 대상으로 설정
-                    repress_pose = None
-                    if si > 0:
-                        repress_z = PLACE_BASE_Z_MM + (si - 1) * STACK_PITCH_MM
-                        repress_pose = DetachPose(
-                            x_mm=PLACE_FIXED_X_MM,
-                            y_mm=y,
-                            z_mm=repress_z,
-                            a_deg=PLACE_A_DEG,
-                            b_deg=PLACE_B_DEG,
-                            c_deg=PLACE_C_DEG,
-                        )
-
                     basket_pose = DetachPose(
                         x_mm=PLACE_FIXED_X_MM,
                         y_mm=410.0,
@@ -1128,8 +1112,7 @@ class RobotControllerNode(Node):
                         color=color,
                         detach_pose=detach_pose,
                         basket_pose=basket_pose,
-                        repress_pose=repress_pose,
-                        pre_press=(detach_idx == 0),
+                        pre_press=True,
                     )
                     execute_detach_discard(self._motion_controller, detach_task)
 
