@@ -2,6 +2,7 @@
 force_monitor_node.py
 DRFL 직접 연결(ctypes)로 외력을 100Hz로 감지하고 /robot/force_detected를 발행한다.
 ROS2 executor와 완전 독립이므로 movel 실행 중에도 실시간 감지 가능하다.
+외력 감지 시 현재 동작 완료 후 정지(_step()에서 pause_event 체크).
 """
 from __future__ import annotations
 
@@ -30,12 +31,11 @@ class ForceMonitorNode(Node):
     def __init__(self) -> None:
         super().__init__('force_monitor')
 
-        self.declare_parameter('robot_ip',           _DEFAULT_IP)
-        self.declare_parameter('robot_port',         _DEFAULT_PORT)
+        self.declare_parameter('robot_ip',            _DEFAULT_IP)
+        self.declare_parameter('robot_port',          _DEFAULT_PORT)
         self.declare_parameter('torque_threshold_nm', 7.0)
-        self.declare_parameter('poll_hz',            100.0)
-        # force가 threshold 이하로 몇 번 연속 측정되면 triggered 해제할지
-        self.declare_parameter('reset_below_count',  20)
+        self.declare_parameter('poll_hz',             100.0)
+        self.declare_parameter('reset_below_count',   20)
 
         robot_ip        = self.get_parameter('robot_ip').value.encode()
         robot_port      = int(self.get_parameter('robot_port').value)

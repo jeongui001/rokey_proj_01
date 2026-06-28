@@ -478,22 +478,15 @@ class RobotMotionController:
             f"a={pose.a_deg:.2f}  b={pose.b_deg:.2f}  c={pose.c_deg:.2f}"
         )
 
+        _target = to_posx(pose)
+
         if async_mode:
             # amovel: 컨트롤러가 큐에 등록하고 즉시 응답 → Python 바로 리턴
-            ret = self._amovel(
-                to_posx(pose),
-                vel=_vel,
-                acc=_acc,
-                ref=self._DR_BASE,
-            )
+            ret = self._amovel(_target, vel=_vel, acc=_acc, ref=self._DR_BASE)
         else:
             # movel: 컨트롤러가 이동 완료 후 응답 → Python 블록
-            ret = self._movel(
-                to_posx(pose),
-                vel=_vel,
-                acc=_acc,
-                ref=self._DR_BASE,
-            )
+            # _move_pause() 호출 시 여기서 재개될 때까지 대기
+            ret = self._movel(_target, vel=_vel, acc=_acc, ref=self._DR_BASE)
             self._mwait()
 
         if ret == -1:
