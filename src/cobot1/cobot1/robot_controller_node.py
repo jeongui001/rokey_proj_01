@@ -103,6 +103,15 @@ PLACE_ROT_STIFFNESS: float = 200.0
 PLACE_FORCE_Z_LIMIT_OFFSET_MM: float = 3.0
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 결합 보조 Spiral 설정 — compliance ON 상태에서 핀홀 탐색용
+# ─────────────────────────────────────────────────────────────────────────────
+PLACE_SPIRAL_REV: float = 0.5       # 회전수: 반 바퀴, 가볍게 탐색
+PLACE_SPIRAL_RMAX_MM: float = 0.5   # 최대 반경(mm): 핀홀 공차 범위 내
+PLACE_SPIRAL_LMAX_MM: float = 0.0   # Z 이동량(mm): 0 → Z는 compliance에 맡김
+PLACE_SPIRAL_VEL: List[float] = [4.0, 4.0]
+PLACE_SPIRAL_ACC: List[float] = [4.0, 4.0]
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 3. RG2 설정
 # ─────────────────────────────────────────────────────────────────────────────
 # Pick 하강 완료 후 그립 전 대기 (초)
@@ -397,6 +406,7 @@ class RobotMotionController:
             DR_BASE,
             DR_TOOL,
             DR_MV_MOD_REL,
+            DR_AXIS_Z,
             get_current_posx,
             set_digital_output,
             get_digital_input,
@@ -409,6 +419,7 @@ class RobotMotionController:
             release_compliance_ctrl,
             set_desired_force,
             DR_FC_MOD_ABS,
+            move_spiral,
         )
         from DR_common2 import posj
 
@@ -435,6 +446,8 @@ class RobotMotionController:
         self._release_compliance_ctrl = release_compliance_ctrl
         self._set_desired_force = set_desired_force
         self._DR_FC_MOD_ABS = DR_FC_MOD_ABS
+        self._move_spiral = move_spiral
+        self._DR_AXIS_Z = DR_AXIS_Z
 
         self._logger.info("RobotMotionController 초기화 완료")
 
@@ -857,6 +870,16 @@ class RobotMotionController:
             vel=PLACE_LINEAR_VELOCITY,
             acc=PLACE_LINEAR_ACCELERATION,
         )
+        self._move_spiral(
+            rev=PLACE_SPIRAL_REV,
+            rmax=PLACE_SPIRAL_RMAX_MM,
+            lmax=PLACE_SPIRAL_LMAX_MM,
+            vel=PLACE_SPIRAL_VEL,
+            acc=PLACE_SPIRAL_ACC,
+            time=0.0,
+            axis=self._DR_AXIS_Z,
+            ref=self._DR_BASE,
+        )
         self._release_compliance_ctrl()
 
         # 3. RG2 release (Digital I/O — wait_digital_input으로 완료 대기)
@@ -1133,7 +1156,7 @@ class RobotControllerNode(Node):
                         detach_pose=detach_pose,
                         basket_pose=basket_pose,
                         repress_pose=repress_pose,
-                        pre_press=(detach_idx == 0),
+                        pre_press=True,
                     )
                     execute_detach_discard(self._motion_controller, detach_task)
 
