@@ -1052,7 +1052,6 @@ class RobotControllerNode(Node):
                 self.get_logger().info("홈 이동 중...")
                 self._motion_controller.move_home()
 
-            stack_counter: dict = {}
             placed_blocks: list = []  # (color, place_y_mm, stack_index) — 쌓은 순서대로 기록
 
             for current_index, task_msg in enumerate(tasks):
@@ -1066,9 +1065,7 @@ class RobotControllerNode(Node):
                 normalized_color = normalize_color(task_msg.color)
                 block_type_str = determine_block_type(task_msg.block_type)
                 place_y_mm = float(task_msg.y_position)
-
-                stack_index = stack_counter.get(place_y_mm, 0)
-                stack_counter[place_y_mm] = stack_index + 1
+                stack_index = int(task_msg.layer)
 
                 self.get_logger().info(
                     f"[{current_index+1}/{total_count}] "

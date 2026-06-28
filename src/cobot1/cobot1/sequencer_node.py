@@ -215,6 +215,7 @@ class SequencerNode(Node):
                 task.color = color
                 task.block_type = btype
                 task.y_position = y_col0 - (col_start + (width - 1) / 2) * pitch
+                task.layer = layer
                 tasks.append(task)
 
         return tasks
