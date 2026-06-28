@@ -76,30 +76,14 @@ TRAVERSE_LINEAR_ACCELERATION: List[float] = [_TRAVERSE_BASE_ACCELERATION * TRAVE
 # Pick 하강 속도 전환 높이 (mm): 이 높이까지는 빠르게, 이하는 느리게
 PICK_APPROACH_Z_MM: float = 100.0
 
-# Place 하강 Force 제어 시작 높이 오프셋 (mm): actual_place_z + 이 값부터 Force 제어
-PLACE_APPROACH_OFFSET_MM: float = 50.0
+# Place 하강 Force 제어 시작 높이 베이스 오프셋 (mm)
+# 실제 전환점 = actual_place_z + PLACE_APPROACH_OFFSET_BASE_MM + stack_index * STACK_PITCH_MM
+# 예) 1층: +40mm, 2층: +60mm, 3층: +80mm, 4층: +100mm
+PLACE_APPROACH_OFFSET_BASE_MM: float = 40.0
 
 # Place 최종 하강 전용 저속 설정
-PLACE_LINEAR_VELOCITY: List[float] = [30.0, 30.0]
-PLACE_LINEAR_ACCELERATION: List[float] = [5.0, 5.0]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Force 제어 설정 — PLACE_DESCEND(블록 삽입 하강) 전용
-# ─────────────────────────────────────────────────────────────────────────────
-# Z축 목표 힘 (N): 블록을 삽입할 때 아래 방향으로 가하는 힘. 너무 크면 블록/트레이 파손.
-PLACE_FORCE_Z_N: float = 7.0
-
-# Z축 강성 (N/m): 낮을수록 Z 방향이 유연. 권장 범위 200~500. 값 높이면 힘이 빠르게 쌓임.
-PLACE_Z_STIFFNESS: float = 200.0
-
-# XY축 강성 (N/m): 높을수록 X·Y 위치 고정. 권장 범위 3000~5000.
-PLACE_XY_STIFFNESS: float = 3000.0
-
-# 회전축 강성 (Nm/rad): 낮을수록 자세가 유연. 권장 범위 200~500.
-PLACE_ROT_STIFFNESS: float = 200.0
-
-# Z 하한 보호 오프셋 (mm): actual_place_z - 이 값 이하로 내려가지 않음. 블록·트레이 보호.
-PLACE_FORCE_Z_LIMIT_OFFSET_MM: float = 3.0
+PLACE_LINEAR_VELOCITY: List[float] = [10.0, 10.0]
+PLACE_LINEAR_ACCELERATION: List[float] = [10.0, 10.0]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. RG2 설정
@@ -119,6 +103,24 @@ PLACE_BASE_Z_MM = 5.0
 PLACE_A_DEG = 170.0
 PLACE_B_DEG = -180.0
 PLACE_C_DEG = 170.0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Force 제어 설정 — PLACE_DESCEND(블록 삽입 하강) 전용
+# ─────────────────────────────────────────────────────────────────────────────
+# Z축 목표 힘 (N): 블록을 삽입할 때 아래 방향으로 가하는 힘. 너무 크면 블록/트레이 파손.
+PLACE_FORCE_Z_N: float = 8.5
+
+# Z축 강성 (N/m): 낮을수록 Z 방향이 유연. 권장 범위 200~500. 값 높이면 힘이 빠르게 쌓임.
+PLACE_Z_STIFFNESS: float = 200.0
+
+# XY축 강성 (N/m): 높을수록 X·Y 위치 고정. 권장 범위 3000~5000.
+PLACE_XY_STIFFNESS: float = 3000.0
+
+# 회전축 강성 (Nm/rad): 낮을수록 자세가 유연. 권장 범위 200~500.
+PLACE_ROT_STIFFNESS: float = 200.0
+
+# Z 하한 보호 오프셋 (mm): actual_place_z - 이 값 이하로 내려가지 않음. 블록·트레이 보호.
+PLACE_FORCE_Z_LIMIT_OFFSET_MM: float = 3.0
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. Queue 이동 정책
@@ -477,7 +479,6 @@ class RobotMotionController:
             f"x={pose.x_mm:.2f}  y={pose.y_mm:.2f}  z={pose.z_mm:.2f}  "
             f"a={pose.a_deg:.2f}  b={pose.b_deg:.2f}  c={pose.c_deg:.2f}"
         )
-
         _target = to_posx(pose)
 
         if async_mode:
@@ -485,7 +486,6 @@ class RobotMotionController:
             ret = self._amovel(_target, vel=_vel, acc=_acc, ref=self._DR_BASE)
         else:
             # movel: 컨트롤러가 이동 완료 후 응답 → Python 블록
-            # _move_pause() 호출 시 여기서 재개될 때까지 대기
             ret = self._movel(_target, vel=_vel, acc=_acc, ref=self._DR_BASE)
             self._mwait()
 
@@ -549,6 +549,36 @@ class RobotMotionController:
             b_deg=float(pos[4]),
             c_deg=float(pos[5]),
         )
+
+    def mwait(self) -> None:
+        """비동기 이동 큐 완료를 대기한다 (외부 모듈용 public 래퍼)."""
+        self._mwait()
+
+    def force_press(self, pose: CartesianPose) -> None:
+        """PLACE_DESCEND와 동일한 Force 제어로 pose까지 하강하여 블록을 눌러준다."""
+        self._task_compliance_ctrl(
+            stx=[
+                PLACE_XY_STIFFNESS,
+                PLACE_XY_STIFFNESS,
+                PLACE_Z_STIFFNESS,
+                PLACE_ROT_STIFFNESS,
+                PLACE_ROT_STIFFNESS,
+                PLACE_ROT_STIFFNESS,
+            ]
+        )
+        self._set_desired_force(
+            fd=[0.0, 0.0, -PLACE_FORCE_Z_N, 0.0, 0.0, 0.0],
+            dir=[0, 0, 1, 0, 0, 0],
+            time=0,
+            mod=self._DR_FC_MOD_ABS,
+        )
+        self.move_linear(
+            pose,
+            "REPRESS_DESCEND",
+            vel=PLACE_LINEAR_VELOCITY,
+            acc=PLACE_LINEAR_ACCELERATION,
+        )
+        self._release_compliance_ctrl()
 
     # ── RG2 그리퍼 제어 (Digital I/O) ──────────────────────────────────────────
 
@@ -628,13 +658,12 @@ class RobotMotionController:
         # 1 & 2. 그리퍼 열기 + 이동을 동시에 실행 (Async 그리퍼 최적화)
         #   - 이동 명령을 async로 큐에 등록 → DSR 컨트롤러가 즉시 이동 시작
         #   - Python은 rg2_release() DI 폴링 실행 → 이동과 그리퍼 열기가 병렬 진행
-        #   - 경유점이 있으면 WAYPOINT → OVERHEAD를 연속 async로 큐잉 → Blending (정지 없이 전환)
+        #   - 경유점이 있으면 WAYPOINT에 동기 정지 후 OVERHEAD로 이동 (경유점 스킵 방지)
         _step("KITTING_RELEASE")
         if waypoint_safe is not None:
             _step("KITTING_WAYPOINT_MOVE")
             self.move_linear(waypoint_safe, "KITTING_WAYPOINT_MOVE",
-                             vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION,
-                             async_mode=True)
+                             vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
         _step("KITTING_OVERHEAD_MOVE")
         self.move_linear(overhead_safe, "KITTING_OVERHEAD_MOVE",
                          vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION,
@@ -659,7 +688,7 @@ class RobotMotionController:
         _step("KITTING_PICK_DESCEND")
         self.move_linear(profile.pick_pose, "KITTING_PICK_DESCEND")
 
-        # 4. Pick Pose 도달 후 웹캠으로 블록 존재 확인
+        # 3. Pick Pose 도달 후 0.3초 정지
         _step("KITTING_PRE_GRIP_WAIT")
         self._node._check_block(task.block_type_str, task.color)
 
@@ -769,9 +798,10 @@ class RobotMotionController:
         self.move_linear(place_overhead_pose, "TARGET_OVERHEAD_MOVE",
                          vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
 
-        # 2a. overhead → (actual_place_z + PLACE_APPROACH_OFFSET_MM) 고속 하강 (공중 구간)
+        # 2a. overhead → 전환점까지 고속 하강 (공중 구간)
+        #     전환점 = actual_place_z + PLACE_APPROACH_OFFSET_BASE_MM
         _step("PLACE_PRE_DESCEND")
-        place_approach_z = actual_place_z + PLACE_APPROACH_OFFSET_MM
+        place_approach_z = actual_place_z + PLACE_APPROACH_OFFSET_BASE_MM
         pre_descend_pose = CartesianPose(
             x_mm=PLACE_FIXED_X_MM,
             y_mm=place_y_mm,
@@ -1050,6 +1080,7 @@ class RobotControllerNode(Node):
                 self._motion_controller.move_home()
 
             stack_counter: dict = {}
+            placed_blocks: list = []  # (color, place_y_mm, stack_index) — 쌓은 순서대로 기록
 
             for current_index, task_msg in enumerate(tasks):
                 self._pause_event.wait()
@@ -1090,7 +1121,73 @@ class RobotControllerNode(Node):
                     step_callback=_step_cb,
                 )
 
+                placed_blocks.append((normalized_color, place_y_mm, stack_index))
                 self.publish_feedback(goal_handle, current_index=current_index)
+
+            # ── 역순 결합 해제 단계 ────────────────────────────────────────────
+            if placed_blocks:
+                from .spiral_detach_discard import (
+                    execute_detach_discard,
+                    DetachDiscardTask,
+                    CartesianPose as DetachPose,
+                    BASKET_POSE,
+                )
+
+                self.get_logger().info(
+                    f"역순 결합 해제 시작: {len(placed_blocks)}개 블록"
+                )
+
+                for detach_idx, (color, y, si) in enumerate(reversed(placed_blocks)):
+                    self._pause_event.wait()
+
+                    if goal_handle.is_cancel_requested:
+                        result.error_message = '사용자에 의해 취소됨'
+                        goal_handle.canceled()
+                        return result
+
+                    actual_place_z = PLACE_BASE_Z_MM + si * STACK_PITCH_MM
+                    detach_pose = DetachPose(
+                        x_mm=PLACE_FIXED_X_MM,
+                        y_mm=y,
+                        z_mm=actual_place_z,
+                        a_deg=PLACE_A_DEG,
+                        b_deg=PLACE_B_DEG,
+                        c_deg=PLACE_C_DEG,
+                    )
+
+                    # si > 0 이면 바로 아래 블록(si-1, 같은 Y열)을 재결합 누르기 대상으로 설정
+                    repress_pose = None
+                    if si > 0:
+                        repress_z = PLACE_BASE_Z_MM + (si - 1) * STACK_PITCH_MM
+                        repress_pose = DetachPose(
+                            x_mm=PLACE_FIXED_X_MM,
+                            y_mm=y,
+                            z_mm=repress_z,
+                            a_deg=PLACE_A_DEG,
+                            b_deg=PLACE_B_DEG,
+                            c_deg=PLACE_C_DEG,
+                        )
+
+                    basket_pose = DetachPose(
+                        x_mm=PLACE_FIXED_X_MM,
+                        y_mm=410.0,
+                        z_mm=BASKET_POSE.z_mm,
+                        a_deg=PLACE_A_DEG,
+                        b_deg=PLACE_B_DEG,
+                        c_deg=PLACE_C_DEG,
+                    )
+
+                    detach_task = DetachDiscardTask(
+                        task_id=f"{color}_y{y:.0f}_si{si}",
+                        color=color,
+                        detach_pose=detach_pose,
+                        basket_pose=basket_pose,
+                        repress_pose=repress_pose,
+                        pre_press=(detach_idx == 0),
+                    )
+                    execute_detach_discard(self._motion_controller, detach_task)
+
+                self.get_logger().info("역순 결합 해제 완료")
 
             if MOVE_HOME_AT_QUEUE_END:
                 self._motion_controller.move_home()
