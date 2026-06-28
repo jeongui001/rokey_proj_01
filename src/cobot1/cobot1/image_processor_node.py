@@ -91,9 +91,10 @@ class ImageProcessorNode(Node):
             target_aspect = (grid_cols * cell_aspect_width) / (
                 grid_rows * cell_aspect_height
             )
+            fit_mode = str(request.fit_mode_override).strip() or str(mosaic_config.get('fit_mode', 'center_crop'))
             fitted = fit_image(
                 source,
-                str(mosaic_config.get('fit_mode', 'center_crop')),
+                fit_mode,
                 target_aspect=target_aspect,
                 smart_crop_min_scale=float(
                     mosaic_config.get('smart_crop_min_scale', 0.80)

@@ -21,6 +21,7 @@ from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
+from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 import DR_init
 
@@ -667,7 +668,7 @@ class RobotMotionController:
 
         # 4. Pick Pose 도달 후 웹캠으로 블록 존재 확인
         _step("KITTING_PRE_GRIP_WAIT")
-        self._node._check_block(task.block_type_str)
+        self._node._check_block(task.block_type_str, task.color)
 
         # 5. RG2 grip (Digital I/O — wait_digital_input으로 완료 대기)
         _step("KITTING_GRIP")
@@ -859,6 +860,34 @@ class RobotMotionController:
 # 15. RobotControllerNode — Action Server 통합
 # ─────────────────────────────────────────────────────────────────────────────
 
+class _ForceDetectorNode(Node):
+    """force_monitor_node의 /robot/force_detected를 수신해 pause_event를 제어하는 노드.
+
+    force_monitor_node가 DRFL 직접 연결로 외력을 감지하고 토픽을 발행한다.
+    이 노드는 pause_executor에서 실행되므로 movel 중에도 콜백이 처리된다.
+    """
+
+    def __init__(self, pause_event: Event) -> None:
+        super().__init__('robot_controller_force_detector')
+        self._pause_event = pause_event
+        self._triggered   = False
+
+        self.create_subscription(Bool, '/robot/force_detected', self._on_msg, 10)
+        self.create_timer(0.5, self._check_resume)
+        self.get_logger().info('ForceDetector 시작: /robot/force_detected 구독 중')
+
+    def _on_msg(self, msg: Bool) -> None:
+        if not msg.data or self._triggered:
+            return
+        self._triggered = True
+        self._pause_event.clear()
+        self.get_logger().warn('외력 감지 수신: 다음 _step()에서 정지')
+
+    def _check_resume(self) -> None:
+        if self._triggered and self._pause_event.is_set():
+            self._triggered = False
+
+
 class _PauseServiceNode(Node):
     """pause_event를 전용 executor에서 제어하는 독립 노드."""
 
@@ -913,19 +942,21 @@ class RobotControllerNode(Node):
 
         self.get_logger().info(f"Action Server 시작: {ACTION_NAME}")
 
-    def _check_block(self, block_type_str: str) -> None:
+    def _check_block(self, block_type_str: str, color: str) -> None:
         """
         웹캠 블록 검사 서비스를 동기적으로 호출한다.
         노드가 이미 MultiThreadedExecutor에서 스핀 중이므로
         threading.Event로 future 완료를 기다린다.
         passed=False이면 RuntimeError를 발생시켜 액션을 abort 처리한다.
         """
+        return  # TODO: 웹캠 노드 준비 전 임시 비활성화
         import threading as _threading
         from cobot1_interfaces.srv import CheckBlock as _CheckBlock
 
         _type_map = {"2x2": 1, "3x2": 2}
         req = _CheckBlock.Request()
         req.block_type = _type_map[block_type_str]
+        req.color = color
 
         future = self._block_checker_client.call_async(req)
         done = _threading.Event()
@@ -1106,9 +1137,11 @@ def main(args=None) -> None:
 
     node = RobotControllerNode(pause_event)
     pause_node = _PauseServiceNode(pause_event)
+    force_node = _ForceDetectorNode(pause_event)
 
     pause_executor = SingleThreadedExecutor()
     pause_executor.add_node(pause_node)
+    pause_executor.add_node(force_node)
     pause_thread = Thread(target=pause_executor.spin, daemon=True)
     pause_thread.start()
 
@@ -1124,6 +1157,7 @@ def main(args=None) -> None:
         pause_executor.shutdown()
         node.destroy_node()
         pause_node.destroy_node()
+        force_node.destroy_node()
         rclpy.shutdown()
 
 

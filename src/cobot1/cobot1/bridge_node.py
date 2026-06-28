@@ -11,6 +11,7 @@ from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 import socketio
 from cv_bridge import CvBridge
 
+from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 from cobot1_interfaces.srv import ProcessMosaic, SequencePlan
 from cobot1_interfaces.action import Assembly
@@ -71,6 +72,7 @@ class BridgeNode(Node):
                 self._bridge._current_image_data = data
                 self._bridge._grid_rows = int(data.get('grid_rows', 8))
                 self._bridge._grid_cols = int(data.get('grid_cols', 16))
+                self._bridge._roi_selected = bool(data.get('roi_selected', False))
                 self._bridge.handle_analyze(cv_image)
 
             @self._sio.on('update_grid', namespace='/bridge')
@@ -139,6 +141,9 @@ class BridgeNode(Node):
                 'error_message': error_message,
             }, namespace='/bridge')
 
+        def send_system_log(self, message: str) -> None:
+            self._sio.emit('system_log', {'message': message}, namespace='/bridge')
+
         def send_block_plan(self, blocks):
             self._sio.emit('block_plan', {
                 'blocks': blocks,
@@ -169,6 +174,8 @@ class BridgeNode(Node):
         # ROS2 구독
         self.webcam_error_sub = self.create_subscription(
             WebcamError, '/webcam/error', self._on_webcam_error, 10)
+        self.force_detected_sub = self.create_subscription(
+            Bool, '/robot/force_detected', self._on_force_detected, 10)
 
         # 내부 상태
         self._bridge = CvBridge()
@@ -178,6 +185,7 @@ class BridgeNode(Node):
         self._current_tasks = []
         self._grid_rows = 8
         self._grid_cols = 16
+        self._roi_selected = False
 
         # Flask 연결
         self._flask = self._FlaskClient(self)
@@ -193,6 +201,7 @@ class BridgeNode(Node):
         request.input_image = self._bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
         request.grid_rows = self._grid_rows
         request.grid_cols = self._grid_cols
+        request.fit_mode_override = 'none' if self._roi_selected else ''
         future = self.image_client.call_async(request)
         future.add_done_callback(self._on_mosaic_result)
 
@@ -359,6 +368,11 @@ class BridgeNode(Node):
             msg.step,
             f'색상 불일치: ({msg.row},{msg.col}) '
             f'{msg.expected_color}→{msg.detected_color}')
+
+    def _on_force_detected(self, msg):
+        if msg.data:
+            self.get_logger().warn('외력 감지 수신 — 브라우저 로그 전송')
+            self._flask.send_system_log('⚠️ 외력 감지: 현재 동작 완료 후 정지')
 
     def cancel_assembly(self):
         if self._goal_handle is not None:

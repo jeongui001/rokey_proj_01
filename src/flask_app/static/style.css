@@ -34,12 +34,29 @@ select {
 }
 .row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .hidden { display: none; }
-#preview {
+#preview-wrapper {
+  position: relative;
   display: none;
-  max-width: 300px;
   margin: 10px 0;
+}
+#preview {
+  display: block;
+  max-width: 480px;
   border-radius: 4px;
 }
+#roi-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+  border-radius: 4px;
+}
+#btn-clear-roi {
+  background: #6e40c9;
+  font-size: 12px;
+  padding: 4px 10px;
+}
+#btn-clear-roi:hover:not(:disabled) { background: #8957e5; }
 #grid-canvas { border: 1px solid #30363d; border-radius: 4px; cursor: crosshair; }
 .hint { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
 #color-palette { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }

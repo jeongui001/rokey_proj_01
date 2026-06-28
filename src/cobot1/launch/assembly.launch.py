@@ -47,4 +47,16 @@ def generate_launch_description():
             output='screen',
             parameters=[{'video_device': '/dev/video2'}],
         ),
+        Node(
+            package='cobot1',
+            executable='force_monitor_node',
+            name='force_monitor',
+            output='screen',
+            parameters=[{
+                'robot_ip': '192.168.1.100',
+                'robot_port': 12345,
+                'torque_threshold_nm': 7.0,
+                'poll_hz': 100.0,
+            }],
+        ),
     ])

@@ -29,6 +29,7 @@ setup(
             'verify_node = cobot1.verify_node:main',
             'camera_node = cobot1.camera_node:main',
             'webcam_checker_node = cobot1.webcam_checker_node:main',
+            'force_monitor_node = cobot1.force_monitor_node:main',
         ],
     },
 )

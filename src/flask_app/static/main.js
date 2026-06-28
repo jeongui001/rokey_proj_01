@@ -28,22 +28,129 @@ for (const [name, hex] of Object.entries(COLOR_HEX)) {
   palette.appendChild(btn);
 }
 
-// ── 이미지 업로드 ──
+// ── 이미지 업로드 & ROI 선택 ──
 
-const fileInput = document.getElementById("file-input");
-const preview   = document.getElementById("preview");
+const fileInput       = document.getElementById("file-input");
+const preview         = document.getElementById("preview");
+const previewWrapper  = document.getElementById("preview-wrapper");
+const roiCanvas       = document.getElementById("roi-canvas");
+const roiCtx          = roiCanvas.getContext("2d");
+const roiHint         = document.getElementById("roi-hint");
+const roiControls     = document.getElementById("roi-controls");
+const btnClearRoi     = document.getElementById("btn-clear-roi");
+
+let roi = null;          // {x0, y0, x1, y1} 원본 이미지 픽셀 기준
+let roiDragging = false;
+let roiDragStart = null;
+
+function syncRoiCanvas() {
+  roiCanvas.width  = preview.offsetWidth;
+  roiCanvas.height = preview.offsetHeight;
+  drawRoiRect();
+}
+
+function drawRoiRect() {
+  roiCtx.clearRect(0, 0, roiCanvas.width, roiCanvas.height);
+  if (!roi) return;
+  const sx = preview.offsetWidth  / preview.naturalWidth;
+  const sy = preview.offsetHeight / preview.naturalHeight;
+  const x = roi.x0 * sx, y = roi.y0 * sy;
+  const w = (roi.x1 - roi.x0) * sx, h = (roi.y1 - roi.y0) * sy;
+  roiCtx.strokeStyle = "#00e5ff";
+  roiCtx.lineWidth = 2;
+  roiCtx.setLineDash([6, 3]);
+  roiCtx.strokeRect(x, y, w, h);
+  roiCtx.fillStyle = "rgba(0,229,255,0.08)";
+  roiCtx.fillRect(x, y, w, h);
+}
+
+function canvasToImagePos(e) {
+  const rect = roiCanvas.getBoundingClientRect();
+  const sx = preview.naturalWidth  / preview.offsetWidth;
+  const sy = preview.naturalHeight / preview.offsetHeight;
+  return {
+    x: Math.round(Math.max(0, Math.min(preview.naturalWidth,  (e.clientX - rect.left) * sx))),
+    y: Math.round(Math.max(0, Math.min(preview.naturalHeight, (e.clientY - rect.top)  * sy))),
+  };
+}
+
+roiCanvas.addEventListener("mousedown", (e) => {
+  if (!preview.naturalWidth) return;
+  e.preventDefault();
+  roiDragging = true;
+  roiDragStart = canvasToImagePos(e);
+  roi = null;
+  drawRoiRect();
+});
+
+roiCanvas.addEventListener("mousemove", (e) => {
+  if (!roiDragging) return;
+  const pos = canvasToImagePos(e);
+  roi = {
+    x0: Math.min(roiDragStart.x, pos.x), y0: Math.min(roiDragStart.y, pos.y),
+    x1: Math.max(roiDragStart.x, pos.x), y1: Math.max(roiDragStart.y, pos.y),
+  };
+  drawRoiRect();
+});
+
+roiCanvas.addEventListener("mouseup", (e) => {
+  if (!roiDragging) return;
+  roiDragging = false;
+  if (roi && (roi.x1 - roi.x0 < 10 || roi.y1 - roi.y0 < 10)) roi = null;
+  roiControls.style.display = roi ? "" : "none";
+  drawRoiRect();
+});
+
+roiCanvas.addEventListener("mouseleave", () => {
+  if (!roiDragging) return;
+  roiDragging = false;
+  if (roi && (roi.x1 - roi.x0 < 10 || roi.y1 - roi.y0 < 10)) roi = null;
+  roiControls.style.display = roi ? "" : "none";
+  drawRoiRect();
+});
+
+btnClearRoi.addEventListener("click", () => {
+  roi = null;
+  roiControls.style.display = "none";
+  drawRoiRect();
+});
+
+preview.addEventListener("load", () => {
+  syncRoiCanvas();
+  roiHint.style.display = "";
+});
+
+window.addEventListener("resize", () => {
+  if (preview.naturalWidth) syncRoiCanvas();
+});
 
 fileInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (ev) => {
+    roi = null;
+    roiControls.style.display = "none";
     preview.src = ev.target.result;
-    preview.style.display = "block";
+    previewWrapper.style.display = "inline-block";
     document.getElementById("btn-analyze").disabled = false;
   };
   reader.readAsDataURL(file);
 });
+
+function getCroppedImageData() {
+  if (!roi || roi.x1 - roi.x0 < 10 || roi.y1 - roi.y0 < 10) {
+    return { imageData: preview.src, roiSelected: false };
+  }
+  const w = roi.x1 - roi.x0, h = roi.y1 - roi.y0;
+  const offscreen = document.createElement("canvas");
+  offscreen.width = w;
+  offscreen.height = h;
+  const img = new Image();
+  img.src = preview.src;
+  offscreen.getContext("2d").drawImage(img, roi.x0, roi.y0, w, h, 0, 0, w, h);
+  return { imageData: offscreen.toDataURL("image/jpeg", 0.92), roiSelected: true };
+}
 
 // ── 분석 요청 ──
 
@@ -51,12 +158,14 @@ document.getElementById("btn-analyze").addEventListener("click", () => {
   if (!preview.src) return;
   GRID_W = parseInt(document.getElementById("input-cols").value) || 16;
   GRID_H = parseInt(document.getElementById("input-rows").value) || 8;
+  const { imageData, roiSelected } = getCroppedImageData();
   socket.emit("upload_image", {
-    image_data: preview.src,
+    image_data: imageData,
     grid_rows: GRID_H,
     grid_cols: GRID_W,
+    roi_selected: roiSelected,
   });
-  addLog("INFO", `이미지 분석 요청 전송 (${GRID_W}×${GRID_H})`);
+  addLog("INFO", `이미지 분석 요청 전송 (${GRID_W}×${GRID_H})${roiSelected ? " [ROI 선택]" : ""}`);
 });
 
 // ── 격자 드래그 편집 ──

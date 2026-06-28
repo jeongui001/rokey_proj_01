@@ -17,6 +17,7 @@ mosaic:
   grid_line_thickness: 1
 
 grid_projection:
+  border_background_detection: false
   inner_cell_ratio: 0.90
   background_lab_distance: 34.0
   unknown_lab_distance: 96.0

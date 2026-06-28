@@ -23,19 +23,30 @@ REQUIRED_CIRCLES = {
 }
 
 # 4점 좌표 [(x1,y1),(x2,y2),(x3,y3),(x4,y4)] 시계 방향 (좌상→우상→우하→좌하).
-# None이면 전체 이미지 사용. roi_check.py 로 측정 후 채울 것.
-BLOCK_ROI: dict[int, Optional[list[tuple[int, int]]]] = {
-    1: None,  # 2x2 — TODO
-    2: None,  # 3x2 — TODO
+# 키: (block_type, color). None이면 전체 이미지 사용.
+# build_config.py 실행 후 출력된 값으로 교체할 것.
+BLOCK_ROI: dict[tuple[int, str], Optional[list[tuple[int, int]]]] = {
+    (1, "yellow"): None,
+    (1, "red"):    None,
+    (1, "blue"):   None,
+    (1, "green"):  None,
+    (2, "yellow"): None,
+    (2, "red"):    None,
+    (2, "blue"):   None,
+    (2, "green"):  None,
 }
 
-# HoughCircles 파라미터 — 실측 튜닝 필요
-HOUGH_DP = 1.2
-HOUGH_MIN_DIST = 20
-HOUGH_PARAM1 = 50
-HOUGH_PARAM2 = 30
-HOUGH_MIN_RADIUS = 5
-HOUGH_MAX_RADIUS = 50
+# HoughCircles 파라미터 — (block_type, color)별. build_config.py 출력값으로 교체할 것.
+HOUGH_PARAMS: dict[tuple[int, str], dict] = {
+    (1, "yellow"): dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (1, "red"):    dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (1, "blue"):   dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (1, "green"):  dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (2, "yellow"): dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (2, "red"):    dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (2, "blue"):   dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (2, "green"):  dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+}
 
 
 def perspective_crop(
@@ -74,19 +85,19 @@ def perspective_crop(
     return cv2.warpPerspective(image, M, (w, h))
 
 
-def count_circles(image_bgr: np.ndarray) -> int:
+def count_circles(image_bgr: np.ndarray, hough: dict) -> int:
     """BGR 이미지에서 허프 원 변환으로 원 개수를 반환한다."""
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
     circles = cv2.HoughCircles(
         blurred,
         cv2.HOUGH_GRADIENT,
-        dp=HOUGH_DP,
-        minDist=HOUGH_MIN_DIST,
-        param1=HOUGH_PARAM1,
-        param2=HOUGH_PARAM2,
-        minRadius=HOUGH_MIN_RADIUS,
-        maxRadius=HOUGH_MAX_RADIUS,
+        dp=hough["dp"],
+        minDist=hough["min_dist"],
+        param1=hough["param1"],
+        param2=hough["param2"],
+        minRadius=int(hough["min_r"]),
+        maxRadius=int(hough["max_r"]),
     )
     if circles is None:
         return 0
@@ -154,6 +165,7 @@ class WebcamCheckerNode(Node):
         response: CheckBlock.Response,
     ) -> CheckBlock.Response:
         block_type = int(request.block_type)
+        color = str(request.color).strip().lower()
         required = REQUIRED_CIRCLES.get(block_type)
 
         if required is None:
@@ -171,9 +183,10 @@ class WebcamCheckerNode(Node):
             self._call_pause()
             return response
 
-        roi = BLOCK_ROI.get(block_type)
+        roi = BLOCK_ROI.get((block_type, color))
         cropped = perspective_crop(frame, roi)
-        detected = count_circles(cropped)
+        hough = HOUGH_PARAMS.get((block_type, color), next(iter(HOUGH_PARAMS.values())))
+        detected = count_circles(cropped, hough)
 
         response.detected_circles = min(detected, 255)
         if detected >= required:
