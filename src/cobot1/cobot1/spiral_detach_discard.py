@@ -44,6 +44,14 @@ MOTION_SETTLE_WAIT_SEC = 0.2
 DETACH_APPROACH_HEIGHT_MM = 50.0
 DETACH_LIFT_HEIGHT_MM = 100.0
 BASKET_APPROACH_HEIGHT_MM = 80.0
+REPRESS_APPROACH_HEIGHT_MM = 50.0  # 재결합 누르기 접근 높이
+
+# 결합 해제 후 바스켓 이동 전 안전 고도 (mm)
+DETACH_TRANSIT_Z_MM = 270.0
+
+# 수평·상승 이동 배속 파라미터
+TRAVERSE_LINEAR_VELOCITY: List[float] = [240.0, 240.0]
+TRAVERSE_LINEAR_ACCELERATION: List[float] = [120.0, 120.0]
 
 SPIRAL_TRIALS: Tuple[Tuple[float, float, float], ...] = (
     (1.0, 0.8, 1.0),
@@ -100,6 +108,12 @@ def _to_posx(pose: CartesianPose):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 4.5. 폐기 바구니 Pose — 수치만 여기서 수정
+# ─────────────────────────────────────────────────────────────────────────────
+BASKET_POSE = CartesianPose(658.35, 282.22, 130.0, 90.0, -180.0, 90.0)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 5. 결합 해제 작업 데이터 모델
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -109,6 +123,8 @@ class DetachDiscardTask:
     color: str
     detach_pose: CartesianPose
     basket_pose: CartesianPose
+    repress_pose: Optional[CartesianPose] = None
+    pre_press: bool = False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -175,18 +191,39 @@ def execute_detach_discard(
     detach_approach_pose = _add_z(task.detach_pose, DETACH_APPROACH_HEIGHT_MM)
     basket_approach_pose = _add_z(task.basket_pose, BASKET_APPROACH_HEIGHT_MM)
 
+    # 1. 블록 위 50mm로 고속 접근
     _step("DETACH_APPROACH")
-    controller.move_linear(detach_approach_pose, "DETACH_APPROACH")
+    controller.move_linear(detach_approach_pose, "DETACH_APPROACH",
+                           vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
 
+    # 1.5. 최상단 블록: spiral 전 선행 누르기 (재결합 눌러주는 블록이 없으므로 안정화)
+    if task.pre_press:
+        _step("PREPRESS_GRIP")
+        controller.rg2_grip()
+
+        _step("PREPRESS_DESCEND")
+        controller.force_press(task.detach_pose)
+
+        _step("PREPRESS_LIFT")
+        controller.move_linear(detach_approach_pose, "PREPRESS_LIFT",
+                               vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
+
+        _step("PREPRESS_RELEASE")
+        controller.rg2_release()
+
+    # 2. 그리퍼 열기
     _step("RG2_OPEN")
     controller.rg2_release()
 
+    # 3. Place했던 좌표 그대로 하강 → 동일 위치에서 파지
     _step("DETACH_DESCEND")
     controller.move_linear(task.detach_pose, "DETACH_DESCEND")
 
+    # 4. 그리퍼 닫기
     _step("RG2_CLOSE")
     controller.rg2_grip()
 
+    # 5. Spiral 결합 해제
     _step("SPIRAL_DETACH")
     success = spiral_detach_only(
         log_info=lambda msg: logger.info(msg),
@@ -198,22 +235,65 @@ def execute_detach_discard(
             f"블록 결합 해제 실패: task_id={task.task_id}"
         )
 
+    # 6. 블록 위 100mm까지 상승
     _step("DETACH_LIFT")
     detach_lift_pose = _add_z(task.detach_pose, DETACH_LIFT_HEIGHT_MM)
     controller.move_linear(detach_lift_pose, "DETACH_LIFT")
 
-    _step("BASKET_APPROACH")
-    controller.move_linear(basket_approach_pose, "BASKET_APPROACH")
+    # 7. 안전 고도까지 상승 (동기 — 자세 전환 전 완전 정지)
+    _step("DETACH_TRANSIT")
+    detach_transit_pose = CartesianPose(
+        x_mm=task.detach_pose.x_mm,
+        y_mm=task.detach_pose.y_mm,
+        z_mm=DETACH_TRANSIT_Z_MM,
+        a_deg=task.detach_pose.a_deg,
+        b_deg=task.detach_pose.b_deg,
+        c_deg=task.detach_pose.c_deg,
+    )
+    controller.move_linear(detach_transit_pose, "DETACH_TRANSIT",
+                           vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
 
+    # 8. 바스켓 상부로 이동 (동기 — 자세 변경 포함)
+    _step("BASKET_APPROACH")
+    controller.move_linear(basket_approach_pose, "BASKET_APPROACH",
+                           vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
+
+    # 9. 바스켓 위치로 하강
     _step("BASKET_DESCEND")
     controller.move_linear(task.basket_pose, "BASKET_DESCEND")
 
+    # 10. 그리퍼 열어 블록 낙하 배출
     _step("RG2_OPEN")
     controller.rg2_release()
 
+    # 11. 바스켓 상부로 복귀
     _step("BASKET_LIFT")
-    controller.move_linear(basket_approach_pose, "BASKET_LIFT")
+    controller.move_linear(basket_approach_pose, "BASKET_LIFT",
+                           vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
     wait(MOTION_SETTLE_WAIT_SEC)
+
+    # 12. 재결합 누르기 — 상위 블록 해제 후 하단 블록 흔들림 방지
+    if task.repress_pose is not None:
+        repress_approach_pose = _add_z(task.repress_pose, REPRESS_APPROACH_HEIGHT_MM)
+
+        _step("REPRESS_APPROACH")
+        controller.move_linear(repress_approach_pose, "REPRESS_APPROACH",
+                               vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
+
+        _step("REPRESS_GRIP")
+        controller.rg2_grip()
+
+        _step("REPRESS_DESCEND")
+        controller.force_press(task.repress_pose)
+
+        _step("REPRESS_LIFT")
+        controller.move_linear(repress_approach_pose, "REPRESS_LIFT",
+                               vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
+
+        _step("REPRESS_RELEASE")
+        controller.rg2_release()
+
+        logger.info(f"[{task.task_id}] 재결합 누르기 완료")
 
     logger.info(
         f"[{task.task_id}] 결합 해제 및 폐기 완료 — color={task.color}"
