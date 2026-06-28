@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>분석 결과 편집 — 레고 조립 시스템</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h1>레고 블록 자동 조립 시스템</h1>
+
+<div class="page-nav">
+  <span class="nav-step done">1. 이미지 분석</span>
+  <span class="nav-arrow">›</span>
+  <span class="nav-step active">2. 분석 결과 편집</span>
+  <span class="nav-arrow">›</span>
+  <span class="nav-step">3. 진행 상황</span>
+</div>
+
+<section>
+  <h2>2. 분석 결과 편집</h2>
+  <p class="hint">셀 클릭 → 색상 변경 / 우클릭 → 비우기</p>
+  <div id="color-palette"></div>
+  <canvas id="grid-canvas" width="480" height="200"></canvas>
+  <div class="row">
+    <button id="btn-back">← 다시 분석</button>
+    <button id="btn-update">수정 반영</button>
+    <button id="btn-start">조립 시작</button>
+  </div>
+  <div id="block-summary" class="hidden">
+    <h3>블록 요약</h3>
+    <div id="block-summary-table"></div>
+  </div>
+</section>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/main.js"></script>
+</body>
+</html>
