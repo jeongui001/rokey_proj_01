@@ -63,9 +63,3 @@ verification:
     min_vertical_fill: 0.35
     min_bottom_fill: 0.08
     color_lab_threshold: 72.0
-    green_color_lab_threshold: 90.0
-    green_min_color_fraction: 0.18
-    green_hsv_hue_min: 35
-    green_hsv_hue_max: 95
-    green_hsv_min_saturation: 25
-    green_hsv_min_value: 25

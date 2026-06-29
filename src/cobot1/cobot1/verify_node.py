@@ -393,10 +393,9 @@ class VerifyNode(Node):
 
         inspection.observed_color = observed_color
         inspection.match_rate = float(color_fraction)
-        min_color_fraction = self._front_min_color_fraction(expected_color)
         inspection.confidence = float(
             min(
-                color_fraction / max(0.01, min_color_fraction),
+                color_fraction / max(0.01, self._front_min_color_fraction()),
                 vertical_fill / max(0.01, self._front_min_vertical_fill()),
                 bottom_fill / max(0.01, self._front_min_bottom_fill()),
                 1.0,
@@ -405,7 +404,7 @@ class VerifyNode(Node):
 
         same_color = self._same_color(expected_color, observed_color)
         stable_shape = (
-            color_fraction >= min_color_fraction
+            color_fraction >= self._front_min_color_fraction()
             and vertical_fill >= self._front_min_vertical_fill()
             and bottom_fill >= self._front_min_bottom_fill()
         )
@@ -452,7 +451,7 @@ class VerifyNode(Node):
                     None,
                     crop_offset,
                 )
-                if color_fraction < self._front_min_color_fraction(observed_color):
+                if color_fraction < self._front_min_color_fraction():
                     colors.append('empty')
                 else:
                     colors.append(observed_color)
@@ -476,52 +475,18 @@ class VerifyNode(Node):
                 f'front_plane ROI가 프레임 밖입니다: row={row}, col={col_start}, width={width}'
             )
 
-        if expected_color:
-            expected_name = self._display_color(expected_color)
-            color_mask = self._front_expected_color_mask(frame, expected_name) & (mask == 255)
-            color_fraction = self._mask_fraction(mask, color_mask)
-            vertical_fill, bottom_fill = self._front_shape_fill(mask, color_mask)
-            observed_color = (
-                expected_name
-                if color_fraction >= self._front_min_color_fraction(expected_name)
-                else 'empty'
-            )
-            return observed_color, color_fraction, vertical_fill, bottom_fill
-
-        return self._front_best_block_color(frame, mask)
-
-    def _front_best_block_color(self, frame, roi_mask) -> tuple[str, float, float, float]:
-        best = ('empty', 0.0, 0.0, 0.0)
-        best_score = 0.0
-
-        for color in self._palette:
-            color_mask = self._front_color_mask(frame, color) & (roi_mask == 255)
-            color_fraction = self._mask_fraction(roi_mask, color_mask)
-            min_color_fraction = float(self._front_config().get('min_color_fraction', 0.25))
-            if color_fraction < min_color_fraction:
-                continue
-
-            vertical_fill, bottom_fill = self._front_shape_fill(roi_mask, color_mask)
-            if (
-                vertical_fill < self._front_min_vertical_fill()
-                or bottom_fill < self._front_min_bottom_fill()
-            ):
-                continue
-
-            score = min(
-                color_fraction / max(0.01, min_color_fraction),
-                vertical_fill / max(0.01, self._front_min_vertical_fill()),
-                bottom_fill / max(0.01, self._front_min_bottom_fill()),
-            )
-            if score > best_score:
-                best = (color, color_fraction, vertical_fill, bottom_fill)
-                best_score = score
-
-        return best
-
-    @staticmethod
-    def _mask_fraction(roi_mask, color_mask) -> float:
-        return float(np.count_nonzero(color_mask)) / float(max(1, np.count_nonzero(roi_mask)))
+        observed_color = (
+            self._display_color(expected_color)
+            if expected_color
+            and self._front_color_fraction(pixels, expected_color)
+            >= self._front_min_color_fraction()
+            else self._front_dominant_color(pixels)
+        )
+        color_for_mask = expected_color if expected_color else observed_color
+        color_mask = self._front_color_mask(frame, color_for_mask) & (mask == 255)
+        color_fraction = float(np.count_nonzero(color_mask)) / float(np.count_nonzero(mask))
+        vertical_fill, bottom_fill = self._front_shape_fill(mask, color_mask)
+        return observed_color, color_fraction, vertical_fill, bottom_fill
 
     def _front_shape_fill(self, roi_mask, color_mask) -> tuple[float, float]:
         ys, xs = np.where(color_mask)
@@ -630,14 +595,7 @@ class VerifyNode(Node):
     def _front_config(self) -> dict:
         return dict(self._verification_config.get('front_plane', {}))
 
-    def _front_min_color_fraction(self, color: str | None = None) -> float:
-        if self._display_color(color or '') == 'green':
-            return float(
-                self._front_config().get(
-                    'green_min_color_fraction',
-                    self._front_config().get('min_color_fraction', 0.25),
-                )
-            )
+    def _front_min_color_fraction(self) -> float:
         return float(self._front_config().get('min_color_fraction', 0.25))
 
     def _front_min_vertical_fill(self) -> float:
@@ -646,57 +604,33 @@ class VerifyNode(Node):
     def _front_min_bottom_fill(self) -> float:
         return float(self._front_config().get('min_bottom_fill', 0.08))
 
+    def _front_color_fraction(self, pixels, color: str) -> float:
+        if pixels.size == 0:
+            return 0.0
+        mask = self._front_color_mask(pixels.reshape(-1, 1, 3), color)
+        return float(np.count_nonzero(mask)) / float(pixels.shape[0])
+
+    def _front_dominant_color(self, pixels) -> str:
+        best_color = 'empty'
+        best_fraction = 0.0
+        for color in self._palette:
+            fraction = self._front_color_fraction(pixels, color)
+            if fraction > best_fraction:
+                best_color = color
+                best_fraction = fraction
+        return best_color if best_fraction >= self._front_min_color_fraction() else 'empty'
+
     def _front_color_mask(self, image_bgr, color: str):
         color = self._display_color(color)
         if color not in self._palette:
             return np.zeros(image_bgr.shape[:2], dtype=bool)
-        return self._front_lab_color_mask(
-            image_bgr,
-            color,
-            float(self._front_config().get('color_lab_threshold', 72.0)),
-        )
 
-    def _front_lab_color_mask(self, image_bgr, color: str, threshold: float):
         lab_image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
         expected_rgb = np.asarray([[self._palette[color]]], dtype=np.uint8)
         expected_lab = cv2.cvtColor(expected_rgb, cv2.COLOR_RGB2LAB)[0, 0].astype(np.float32)
         distance = np.linalg.norm(lab_image - expected_lab, axis=2)
+        threshold = float(self._front_config().get('color_lab_threshold', 72.0))
         return distance <= threshold
-
-    def _front_expected_color_mask(self, image_bgr, color: str):
-        color = self._display_color(color)
-        if color not in self._palette:
-            return np.zeros(image_bgr.shape[:2], dtype=bool)
-        mask = self._front_lab_color_mask(
-            image_bgr,
-            color,
-            float(
-                self._front_config().get(
-                    f'{color}_color_lab_threshold',
-                    self._front_config().get('color_lab_threshold', 72.0),
-                )
-            ),
-        )
-        if color == 'green':
-            mask |= self._front_green_hsv_mask(image_bgr)
-        return mask
-
-    def _front_green_hsv_mask(self, image_bgr):
-        cfg = self._front_config()
-        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
-        return cv2.inRange(
-            hsv,
-            (
-                int(cfg.get('green_hsv_hue_min', 35)),
-                int(cfg.get('green_hsv_min_saturation', 25)),
-                int(cfg.get('green_hsv_min_value', 25)),
-            ),
-            (
-                int(cfg.get('green_hsv_hue_max', 95)),
-                255,
-                255,
-            ),
-        ).astype(bool)
 
     def _roi_configured(self) -> bool:
         roi = self._verification_config.get('roi', {})
