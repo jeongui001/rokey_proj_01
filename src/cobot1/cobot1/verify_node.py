@@ -481,9 +481,11 @@ class VerifyNode(Node):
             color_mask = self._front_expected_color_mask(frame, expected_name) & (mask == 255)
             color_fraction = self._mask_fraction(mask, color_mask)
             vertical_fill, bottom_fill = self._front_shape_fill(mask, color_mask)
-            observed_color = expected_name
-            if color_fraction < self._front_min_color_fraction(expected_name):
-                observed_color = self._front_best_block_color(frame, mask)[0]
+            observed_color = (
+                expected_name
+                if color_fraction >= self._front_min_color_fraction(expected_name)
+                else 'empty'
+            )
             return observed_color, color_fraction, vertical_fill, bottom_fill
 
         return self._front_best_block_color(frame, mask)
