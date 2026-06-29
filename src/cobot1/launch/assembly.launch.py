@@ -56,7 +56,7 @@ def generate_launch_description():
             parameters=[{
                 'robot_ip': '192.168.1.100',
                 'robot_port': 12345,
-                'torque_threshold_nm': 15.0,
+                'torque_threshold_nm': 18.0,
                 'poll_hz': 100.0,
             }],
         ),

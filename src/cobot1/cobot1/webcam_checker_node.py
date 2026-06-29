@@ -9,6 +9,7 @@ import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
+from std_msgs.msg import String
 from std_srvs.srv import SetBool
 
 from cobot1_interfaces.srv import CheckBlock
@@ -19,7 +20,7 @@ CHECK_SERVICE = '/webcam/check_block'
 # 블록 유형별 합격 원 개수
 CIRCLE_RANGE = {
     1: (2, 5),  # 2x2: 3~5개
-    2: (4, 7),  # 3x2: 5~7개
+    2: (3, 7),  # 3x2: 5~7개
 }
 
 # 4점 좌표 [(x1,y1),(x2,y2),(x3,y3),(x4,y4)] 시계 방향 (좌상→우상→우하→좌하).
@@ -144,6 +145,7 @@ class WebcamCheckerNode(Node):
         self._capture_thread = threading.Thread(target=self._capture_loop, daemon=True)
         self._capture_thread.start()
 
+        self._log_pub = self.create_publisher(String, '/webcam/log', 10)
         self._callback_group = ReentrantCallbackGroup()
         self._pause_client = self.create_client(SetBool, PAUSE_SERVICE)
         self._service = self.create_service(
@@ -235,10 +237,12 @@ class WebcamCheckerNode(Node):
             response.passed = True
             response.message = f'합격: {detected}개 검출 (허용 {min_circles}~{max_circles}개)'
             self.get_logger().info(response.message)
+            self._log_pub.publish(String(data=f'✅ 블록 확인 합격 ({block_type}형 {color}): {detected}개 검출'))
         else:
             response.passed = False
             response.message = f'불합격: {detected}개 검출 (허용 {min_circles}~{max_circles}개)'
             self.get_logger().warn(response.message)
+            self._log_pub.publish(String(data=f'⚠️ 블록 확인 불합격 ({block_type}형 {color}): {detected}개 검출 (허용 {min_circles}~{max_circles}개)'))
             self._call_pause()
 
         return response

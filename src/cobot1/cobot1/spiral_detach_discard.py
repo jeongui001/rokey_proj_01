@@ -180,6 +180,7 @@ def execute_detach_discard(
     logger = controller.logger
 
     def _step(name: str) -> None:
+        controller._node._pause_event.wait()
         logger.info(f"[{task.task_id}] 단계: {name}")
         if step_callback is not None:
             step_callback(name)

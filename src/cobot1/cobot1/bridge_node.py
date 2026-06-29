@@ -11,7 +11,7 @@ from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 import socketio
 from cv_bridge import CvBridge
 
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 from std_srvs.srv import SetBool
 from cobot1_interfaces.srv import ProcessMosaic, SequencePlan
 from cobot1_interfaces.action import Assembly
@@ -100,6 +100,7 @@ class BridgeNode(Node):
                 req = SetBool.Request()
                 req.data = True
                 self._bridge.pause_client.call_async(req)
+                self.send_system_log('⏸ 일시정지')
 
             @self._sio.on('resume', namespace='/bridge')
             def on_resume():
@@ -107,6 +108,7 @@ class BridgeNode(Node):
                 req = SetBool.Request()
                 req.data = False
                 self._bridge.pause_client.call_async(req)
+                self.send_system_log('▶ 재개')
 
         # ── base64 → OpenCV 변환 ──
 
@@ -182,6 +184,8 @@ class BridgeNode(Node):
             WebcamError, '/webcam/error', self._on_webcam_error, 10)
         self.force_detected_sub = self.create_subscription(
             Bool, '/robot/force_detected', self._on_force_detected, 10)
+        self.webcam_log_sub = self.create_subscription(
+            String, '/webcam/log', self._on_webcam_log, 10)
 
         # 내부 상태
         self._bridge = CvBridge()
@@ -240,11 +244,14 @@ class BridgeNode(Node):
                 self._flask.send_analysis_result(
                     True, json.dumps(self._current_colors),
                     grid_rows=self._grid_rows, grid_cols=self._grid_cols)
+                self._flask.send_system_log('✅ 이미지 분석 완료')
             else:
                 self._flask.send_analysis_result(False, error_message=response.message)
+                self._flask.send_system_log(f'❌ 이미지 분석 실패: {response.message}')
         except Exception as e:
             self.get_logger().error(f'ProcessMosaic 호출 실패: {e}')
             self._flask.send_analysis_result(False, error_message=str(e))
+            self._flask.send_system_log(f'❌ 이미지 분석 실패: {e}')
 
     # ════════════════════════════════════════════
     #  VerifyNode 토픽 (기준 모델 발행)
@@ -302,11 +309,13 @@ class BridgeNode(Node):
             response = future.result()
             if response.error_message:
                 self._flask.send_assembly_error(-1, response.error_message)
+                self._flask.send_system_log(f'❌ 배치 계획 실패: {response.error_message}')
                 return
             self._send_action_goal(response.tasks)
         except Exception as e:
             self.get_logger().error(f'SequencePlan 호출 실패: {e}')
             self._flask.send_assembly_error(-1, str(e))
+            self._flask.send_system_log(f'❌ 배치 계획 실패: {e}')
 
     # ════════════════════════════════════════════
     #  RobotController 액션 (로봇 실행)
@@ -322,12 +331,14 @@ class BridgeNode(Node):
             goal, feedback_callback=self._on_robot_feedback)
         send_future.add_done_callback(self._on_goal_response)
         self._flask.send_assembly_started()
+        self._flask.send_system_log(f'🤖 조립 시작: {len(tasks)}개 블록')
 
     def _on_goal_response(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().warn('액션 골 거부됨')
             self._flask.send_assembly_error(-1, '로봇이 작업을 거부했습니다.')
+            self._flask.send_system_log('⛔ 골 거부: 로봇이 작업을 거부했습니다')
             return
         self._goal_handle = goal_handle
         result_future = goal_handle.get_result_async()
@@ -356,9 +367,11 @@ class BridgeNode(Node):
         result = future.result().result
         if not result.error_message:
             self._flask.send_assembly_done(len(self._current_tasks))
+            self._flask.send_system_log(f'✅ 조립 완료: {len(self._current_tasks)}개 블록')
         else:
             db.insert_error(result.failed_step, 'ACTION_FAIL', result.error_message)
             self._flask.send_assembly_error(result.failed_step, result.error_message)
+            self._flask.send_system_log(f'❌ 조립 실패 (step {result.failed_step}): {result.error_message}')
 
     # ════════════════════════════════════════════
     #  WebcamNode 토픽 (에러 감지)
@@ -374,6 +387,12 @@ class BridgeNode(Node):
             msg.step,
             f'색상 불일치: ({msg.row},{msg.col}) '
             f'{msg.expected_color}→{msg.detected_color}')
+        self._flask.send_system_log(
+            f'🔍 웹캠 색상 불일치 (step {msg.step}): '
+            f'({msg.row},{msg.col}) {msg.expected_color}→{msg.detected_color}')
+
+    def _on_webcam_log(self, msg):
+        self._flask.send_system_log(msg.data)
 
     def _on_force_detected(self, msg):
         if msg.data:
