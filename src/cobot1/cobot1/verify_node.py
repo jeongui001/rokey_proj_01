@@ -477,12 +477,14 @@ class VerifyNode(Node):
             )
 
         if expected_color:
-            observed_color = self._display_color(expected_color)
-            color_mask = self._front_expected_color_mask(frame, observed_color) & (mask == 255)
+            expected_name = self._display_color(expected_color)
+            color_mask = self._front_expected_color_mask(frame, expected_name) & (mask == 255)
             color_fraction = self._mask_fraction(mask, color_mask)
-            if color_fraction >= self._front_min_color_fraction(observed_color):
-                vertical_fill, bottom_fill = self._front_shape_fill(mask, color_mask)
-                return observed_color, color_fraction, vertical_fill, bottom_fill
+            vertical_fill, bottom_fill = self._front_shape_fill(mask, color_mask)
+            observed_color = expected_name
+            if color_fraction < self._front_min_color_fraction(expected_name):
+                observed_color = self._front_best_block_color(frame, mask)[0]
+            return observed_color, color_fraction, vertical_fill, bottom_fill
 
         return self._front_best_block_color(frame, mask)
 
@@ -493,7 +495,7 @@ class VerifyNode(Node):
         for color in self._palette:
             color_mask = self._front_color_mask(frame, color) & (roi_mask == 255)
             color_fraction = self._mask_fraction(roi_mask, color_mask)
-            min_color_fraction = self._front_min_color_fraction(color)
+            min_color_fraction = float(self._front_config().get('min_color_fraction', 0.25))
             if color_fraction < min_color_fraction:
                 continue
 
@@ -646,22 +648,33 @@ class VerifyNode(Node):
         color = self._display_color(color)
         if color not in self._palette:
             return np.zeros(image_bgr.shape[:2], dtype=bool)
+        return self._front_lab_color_mask(
+            image_bgr,
+            color,
+            float(self._front_config().get('color_lab_threshold', 72.0)),
+        )
 
+    def _front_lab_color_mask(self, image_bgr, color: str, threshold: float):
         lab_image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
         expected_rgb = np.asarray([[self._palette[color]]], dtype=np.uint8)
         expected_lab = cv2.cvtColor(expected_rgb, cv2.COLOR_RGB2LAB)[0, 0].astype(np.float32)
         distance = np.linalg.norm(lab_image - expected_lab, axis=2)
-        threshold = float(
-            self._front_config().get(
-                f'{color}_color_lab_threshold',
-                self._front_config().get('color_lab_threshold', 72.0),
-            )
-        )
         return distance <= threshold
 
     def _front_expected_color_mask(self, image_bgr, color: str):
         color = self._display_color(color)
-        mask = self._front_color_mask(image_bgr, color)
+        if color not in self._palette:
+            return np.zeros(image_bgr.shape[:2], dtype=bool)
+        mask = self._front_lab_color_mask(
+            image_bgr,
+            color,
+            float(
+                self._front_config().get(
+                    f'{color}_color_lab_threshold',
+                    self._front_config().get('color_lab_threshold', 72.0),
+                )
+            ),
+        )
         if color == 'green':
             mask |= self._front_green_hsv_mask(image_bgr)
         return mask
