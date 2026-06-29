@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import product as iter_product
 import math
 import threading
 import time
@@ -33,6 +34,7 @@ CELL_ASPECT_WIDTH = 15.9
 CELL_ASPECT_HEIGHT = 19.0
 DEFAULT_CONFIDENCE_THRESHOLD = 0.70
 DEFAULT_MATCH_THRESHOLD = 0.80
+DEFAULT_BEAM_WIDTH = 15
 
 
 def _default_vision_config() -> str:
@@ -391,9 +393,10 @@ class VerifyNode(Node):
 
         inspection.observed_color = observed_color
         inspection.match_rate = float(color_fraction)
+        min_color_fraction = self._front_min_color_fraction(expected_color)
         inspection.confidence = float(
             min(
-                color_fraction / max(0.01, self._front_min_color_fraction()),
+                color_fraction / max(0.01, min_color_fraction),
                 vertical_fill / max(0.01, self._front_min_vertical_fill()),
                 bottom_fill / max(0.01, self._front_min_bottom_fill()),
                 1.0,
@@ -402,7 +405,7 @@ class VerifyNode(Node):
 
         same_color = self._same_color(expected_color, observed_color)
         stable_shape = (
-            color_fraction >= self._front_min_color_fraction()
+            color_fraction >= min_color_fraction
             and vertical_fill >= self._front_min_vertical_fill()
             and bottom_fill >= self._front_min_bottom_fill()
         )
@@ -449,7 +452,7 @@ class VerifyNode(Node):
                     None,
                     crop_offset,
                 )
-                if color_fraction < self._front_min_color_fraction():
+                if color_fraction < self._front_min_color_fraction(observed_color):
                     colors.append('empty')
                 else:
                     colors.append(observed_color)
@@ -473,18 +476,48 @@ class VerifyNode(Node):
                 f'front_plane ROI가 프레임 밖입니다: row={row}, col={col_start}, width={width}'
             )
 
-        observed_color = (
-            self._display_color(expected_color)
-            if expected_color
-            and self._front_color_fraction(pixels, expected_color)
-            >= self._front_min_color_fraction()
-            else self._front_dominant_color(pixels)
-        )
-        color_for_mask = expected_color if expected_color else observed_color
-        color_mask = self._front_color_mask(frame, color_for_mask) & (mask == 255)
-        color_fraction = float(np.count_nonzero(color_mask)) / float(np.count_nonzero(mask))
-        vertical_fill, bottom_fill = self._front_shape_fill(mask, color_mask)
-        return observed_color, color_fraction, vertical_fill, bottom_fill
+        if expected_color:
+            observed_color = self._display_color(expected_color)
+            color_mask = self._front_expected_color_mask(frame, observed_color) & (mask == 255)
+            color_fraction = self._mask_fraction(mask, color_mask)
+            if color_fraction >= self._front_min_color_fraction(observed_color):
+                vertical_fill, bottom_fill = self._front_shape_fill(mask, color_mask)
+                return observed_color, color_fraction, vertical_fill, bottom_fill
+
+        return self._front_best_block_color(frame, mask)
+
+    def _front_best_block_color(self, frame, roi_mask) -> tuple[str, float, float, float]:
+        best = ('empty', 0.0, 0.0, 0.0)
+        best_score = 0.0
+
+        for color in self._palette:
+            color_mask = self._front_color_mask(frame, color) & (roi_mask == 255)
+            color_fraction = self._mask_fraction(roi_mask, color_mask)
+            min_color_fraction = self._front_min_color_fraction(color)
+            if color_fraction < min_color_fraction:
+                continue
+
+            vertical_fill, bottom_fill = self._front_shape_fill(roi_mask, color_mask)
+            if (
+                vertical_fill < self._front_min_vertical_fill()
+                or bottom_fill < self._front_min_bottom_fill()
+            ):
+                continue
+
+            score = min(
+                color_fraction / max(0.01, min_color_fraction),
+                vertical_fill / max(0.01, self._front_min_vertical_fill()),
+                bottom_fill / max(0.01, self._front_min_bottom_fill()),
+            )
+            if score > best_score:
+                best = (color, color_fraction, vertical_fill, bottom_fill)
+                best_score = score
+
+        return best
+
+    @staticmethod
+    def _mask_fraction(roi_mask, color_mask) -> float:
+        return float(np.count_nonzero(color_mask)) / float(max(1, np.count_nonzero(roi_mask)))
 
     def _front_shape_fill(self, roi_mask, color_mask) -> tuple[float, float]:
         ys, xs = np.where(color_mask)
@@ -593,7 +626,14 @@ class VerifyNode(Node):
     def _front_config(self) -> dict:
         return dict(self._verification_config.get('front_plane', {}))
 
-    def _front_min_color_fraction(self) -> float:
+    def _front_min_color_fraction(self, color: str | None = None) -> float:
+        if self._display_color(color or '') == 'green':
+            return float(
+                self._front_config().get(
+                    'green_min_color_fraction',
+                    self._front_config().get('min_color_fraction', 0.25),
+                )
+            )
         return float(self._front_config().get('min_color_fraction', 0.25))
 
     def _front_min_vertical_fill(self) -> float:
@@ -601,22 +641,6 @@ class VerifyNode(Node):
 
     def _front_min_bottom_fill(self) -> float:
         return float(self._front_config().get('min_bottom_fill', 0.08))
-
-    def _front_color_fraction(self, pixels, color: str) -> float:
-        if pixels.size == 0:
-            return 0.0
-        mask = self._front_color_mask(pixels.reshape(-1, 1, 3), color)
-        return float(np.count_nonzero(mask)) / float(pixels.shape[0])
-
-    def _front_dominant_color(self, pixels) -> str:
-        best_color = 'empty'
-        best_fraction = 0.0
-        for color in self._palette:
-            fraction = self._front_color_fraction(pixels, color)
-            if fraction > best_fraction:
-                best_color = color
-                best_fraction = fraction
-        return best_color if best_fraction >= self._front_min_color_fraction() else 'empty'
 
     def _front_color_mask(self, image_bgr, color: str):
         color = self._display_color(color)
@@ -627,8 +651,37 @@ class VerifyNode(Node):
         expected_rgb = np.asarray([[self._palette[color]]], dtype=np.uint8)
         expected_lab = cv2.cvtColor(expected_rgb, cv2.COLOR_RGB2LAB)[0, 0].astype(np.float32)
         distance = np.linalg.norm(lab_image - expected_lab, axis=2)
-        threshold = float(self._front_config().get('color_lab_threshold', 72.0))
+        threshold = float(
+            self._front_config().get(
+                f'{color}_color_lab_threshold',
+                self._front_config().get('color_lab_threshold', 72.0),
+            )
+        )
         return distance <= threshold
+
+    def _front_expected_color_mask(self, image_bgr, color: str):
+        color = self._display_color(color)
+        mask = self._front_color_mask(image_bgr, color)
+        if color == 'green':
+            mask |= self._front_green_hsv_mask(image_bgr)
+        return mask
+
+    def _front_green_hsv_mask(self, image_bgr):
+        cfg = self._front_config()
+        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
+        return cv2.inRange(
+            hsv,
+            (
+                int(cfg.get('green_hsv_hue_min', 35)),
+                int(cfg.get('green_hsv_min_saturation', 25)),
+                int(cfg.get('green_hsv_min_value', 25)),
+            ),
+            (
+                int(cfg.get('green_hsv_hue_max', 95)),
+                255,
+                255,
+            ),
+        ).astype(bool)
 
     def _roi_configured(self) -> bool:
         roi = self._verification_config.get('roi', {})
@@ -893,34 +946,139 @@ class VerifyNode(Node):
         if len(colors) != rows * cols:
             return []
 
+        try:
+            grid = [
+                list(colors[row * cols:(row + 1) * cols])
+                for row in range(rows)
+            ]
+            row_blocks = self._match_blocks(grid, cols, rows)
+        except ValueError as exc:
+            self.get_logger().warn(f'검증용 블록 계획 생성 실패: {exc}')
+            return []
+
         spans = []
-        for row in range(rows - 1, -1, -1):
-            col = 0
-            while col < cols:
-                color = colors[row * cols + col]
-                if self._is_empty(color):
-                    col += 1
-                    continue
-
-                start_col = col
-                while col < cols and self._same_color(colors[row * cols + col], color):
-                    col += 1
-
-                offset = 0
-                for width in self._block_widths(col - start_col):
-                    spans.append((row, start_col + offset, width, color))
-                    offset += width
+        for layer in range(rows):
+            row = rows - 1 - layer
+            for col_start, width, color, _ in row_blocks.get(row, []):
+                spans.append((row, col_start, width, color))
         return spans
 
     @staticmethod
-    def _block_widths(run_length: int) -> list[int]:
-        if run_length < 2:
+    def _generate_partitions(length: int) -> list[list[int]]:
+        if length == 0:
+            return [[]]
+        if length < 2:
             return []
-        if run_length % 3 == 0:
-            return [3] * (run_length // 3)
-        if run_length % 3 == 1:
-            return [2, 2] + [3] * ((run_length - 4) // 3)
-        return [2] + [3] * ((run_length - 2) // 3)
+
+        partitions = []
+        for width in (2, 3):
+            if length >= width:
+                for rest in VerifyNode._generate_partitions(length - width):
+                    partitions.append([width] + rest)
+        return partitions
+
+    @staticmethod
+    def _internal_boundaries(blocks, cols: int) -> set[int]:
+        boundaries = set()
+        for col_start, width, _, _ in blocks:
+            boundaries.add(col_start)
+            boundaries.add(col_start + width)
+        boundaries.discard(0)
+        boundaries.discard(cols)
+        return boundaries
+
+    @staticmethod
+    def _block_loss(col_start: int, width: int, lower_boundaries: set[int]) -> int:
+        left = col_start
+        right = col_start + width
+        hits = [boundary for boundary in lower_boundaries if left <= boundary <= right]
+        if len(hits) == 1 and hits[0] != left and hits[0] != right:
+            return 0
+        return 1
+
+    @staticmethod
+    def _to_blocks(runs, partitions):
+        blocks = []
+        for (color, _, start_col), partition in zip(runs, partitions):
+            col = start_col
+            for width in partition:
+                blocks.append((col, width, color, 1 if width == 2 else 2))
+                col += width
+        return blocks
+
+    def _find_runs(self, row: list[str]):
+        runs = []
+        col = 0
+        while col < len(row):
+            color = row[col]
+            if self._is_empty(color):
+                col += 1
+                continue
+
+            length = 1
+            while col + length < len(row) and self._same_color(row[col + length], color):
+                length += 1
+
+            if length >= 2:
+                runs.append((color, length, col))
+            col += length
+        return runs
+
+    def _run_partitions(self, runs):
+        partitions = []
+        for color, length, start_col in runs:
+            candidates = self._generate_partitions(length)
+            if not candidates:
+                raise ValueError(
+                    f'길이 {length}의 런({color}, col {start_col})을 분할할 수 없습니다.'
+                )
+            partitions.append(candidates)
+        return partitions
+
+    def _match_blocks(self, grid: list[list[str]], cols: int, rows: int):
+        bottom = rows - 1
+        runs = self._find_runs(grid[bottom])
+        if not runs:
+            return {row: [] for row in range(rows)}
+
+        candidates = []
+        for partitions in iter_product(*self._run_partitions(runs)):
+            blocks = self._to_blocks(runs, partitions)
+            type2_count = sum(1 for _, width, _, _ in blocks if width == 3)
+            candidates.append((type2_count, blocks))
+        candidates.sort(key=lambda item: item[0], reverse=True)
+
+        beam = []
+        for _, blocks in candidates[:DEFAULT_BEAM_WIDTH]:
+            beam.append((0.0, {bottom: blocks}, self._internal_boundaries(blocks, cols)))
+
+        for layer in range(1, rows):
+            row = rows - 1 - layer
+            weight = math.sqrt(rows - layer)
+            runs = self._find_runs(grid[row])
+            if not runs:
+                beam = [(loss, {**row_blocks, row: []}, boundaries) for loss, row_blocks, boundaries in beam]
+                continue
+
+            new_beam = []
+            for prev_loss, prev_rows, lower_boundaries in beam:
+                for partitions in iter_product(*self._run_partitions(runs)):
+                    blocks = self._to_blocks(runs, partitions)
+                    loss = sum(
+                        self._block_loss(col_start, width, lower_boundaries)
+                        for col_start, width, _, _ in blocks
+                    )
+                    total_loss = prev_loss + loss * weight
+                    new_beam.append((
+                        total_loss,
+                        {**prev_rows, row: blocks},
+                        self._internal_boundaries(blocks, cols),
+                    ))
+
+            new_beam.sort(key=lambda item: item[0])
+            beam = new_beam[:DEFAULT_BEAM_WIDTH]
+
+        return beam[0][1]
 
     def _observed_summary(self, observed_colors: list[str], indices: list[int]) -> str:
         colors = [
