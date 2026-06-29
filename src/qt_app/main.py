@@ -21,7 +21,9 @@ try:
         QProgressBar, QTextEdit, QTableWidget, QTableWidgetItem,
         QHeaderView, QSizePolicy, QFileDialog, QGroupBox, QScrollArea,
     )
-    from PySide6.QtCore import Qt, QThread, Signal, QPoint, QRect, QBuffer, QIODevice
+    from PySide6.QtCore import (
+        Qt, QThread, Signal, QPoint, QRect, QBuffer, QIODevice, QTimer,
+    )
     from PySide6.QtGui import QPixmap, QPainter, QColor, QPen, QBrush, QImage, QFont
 except ImportError:
     print("PySide6가 설치되어 있지 않습니다.\npip install PySide6")
@@ -200,14 +202,16 @@ class SocketWorker(QThread):
         except Exception as e:
             print(f"[SocketIO] 연결 실패: {e}")
 
-    def send(self, event, data=None):
+    def send(self, event, data=None) -> bool:
         if not self.sio or not self.sio.connected:
             print(f"[SocketIO] 연결되지 않음 — {event} 전송 실패")
-            return
+            return False
         try:
             self.sio.emit(event, data)
+            return True
         except Exception as e:
             print(f"[SocketIO] emit 실패 ({event}): {e}")
+            return False
 
     def stop(self):
         if self.sio:
@@ -224,6 +228,7 @@ class ImageViewer(QLabel):
     roi_changed = Signal(object)   # QRect(이미지 좌표) or None
 
     MAX_W = 480
+    MAX_ANALYSIS_DIM = 1920
 
     def __init__(self):
         super().__init__()
@@ -315,6 +320,13 @@ class ImageViewer(QLabel):
         if self._orig is None:
             return ""
         src = self._orig.copy(self._roi_image) if self._roi_image else self._orig
+        if max(src.width(), src.height()) > self.MAX_ANALYSIS_DIM:
+            src = src.scaled(
+                self.MAX_ANALYSIS_DIM,
+                self.MAX_ANALYSIS_DIM,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
+            )
         buf = QBuffer()
         buf.open(QIODevice.WriteOnly)
         src.save(buf, "JPEG", 92)
@@ -568,9 +580,15 @@ def build_block_map(blocks, grid, grid_w, grid_h):
 
 class Page1(QWidget):
     sig_analyze = Signal(dict)
+    ANALYSIS_TIMEOUT_MS = 20_000
 
     def __init__(self):
         super().__init__()
+        self._analysis_timer = QTimer(self)
+        self._analysis_timer.setSingleShot(True)
+        self._analysis_timer.timeout.connect(
+            lambda: self.on_failed("응답 시간이 초과되었습니다. Bridge/ROS 노드를 확인하세요.")
+        )
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
@@ -649,6 +667,7 @@ class Page1(QWidget):
     def _on_analyze(self):
         self.btn_analyze.setEnabled(False)
         self.lbl_status.setText("분석 중...")
+        self._analysis_timer.start(self.ANALYSIS_TIMEOUT_MS)
         self.sig_analyze.emit({
             "image_data": self.viewer.get_image_b64(),
             "grid_rows":  self.spin_rows.value(),
@@ -657,10 +676,17 @@ class Page1(QWidget):
         })
 
     def on_failed(self, msg: str):
+        self._analysis_timer.stop()
         self.btn_analyze.setEnabled(True)
         self.lbl_status.setText(f"분석 실패: {msg}")
 
+    def on_succeeded(self):
+        self._analysis_timer.stop()
+        self.btn_analyze.setEnabled(True)
+        self.lbl_status.setText("")
+
     def reset_status(self):
+        self._analysis_timer.stop()
         self.lbl_status.setText("")
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -944,7 +970,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(scroll)
 
         # 페이지 간 시그널 연결
-        self.page1.sig_analyze.connect(lambda d: self.worker.send("upload_image", d))
+        self.page1.sig_analyze.connect(self._send_analyze)
         self.page2.sig_update.connect(lambda d: self.worker.send("update_grid", d))
         self.page2.sig_start.connect(self._on_start_assembly)
         self.page2.sig_back.connect(lambda: self.stack.setCurrentWidget(self.page1))
@@ -969,7 +995,12 @@ class MainWindow(QMainWindow):
         if not data.get("success"):
             self.page1.on_failed(data.get("error_message", "알 수 없는 오류"))
             return
-        parsed = json.loads(data.get("grid_json", "[]"))
+        try:
+            parsed = json.loads(data.get("grid_json", "[]"))
+        except (TypeError, json.JSONDecodeError) as exc:
+            self.page1.on_failed(f"분석 결과 형식 오류: {exc}")
+            return
+        self.page1.on_succeeded()
         grid_w = int(data.get("grid_cols", 16))
         grid_h = int(data.get("grid_rows", 8))
         if parsed and isinstance(parsed[0], list):
@@ -985,6 +1016,10 @@ class MainWindow(QMainWindow):
                 grid.append(row)
         self.page2.load_grid(grid, grid_w, grid_h)
         self.stack.setCurrentWidget(self.page2)
+
+    def _send_analyze(self, data: dict):
+        if not self.worker.send("upload_image", data):
+            self.page1.on_failed("Flask Socket.IO 서버에 연결되지 않았습니다.")
 
     def _on_start_assembly(self, data: dict):
         self.page3.reset()

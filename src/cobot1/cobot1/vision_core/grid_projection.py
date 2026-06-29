@@ -79,14 +79,14 @@ def _border_background_mask(image_bgr: np.ndarray, cfg: dict) -> np.ndarray | No
     flood = np.zeros((height + 2, width + 2), dtype=np.uint8)
     connected = candidate.copy()
     for x in range(width):
-        if connected[0, x]:
+        if connected[0, x] == 1:
             cv2.floodFill(connected, flood, (x, 0), 2)
-        if connected[height - 1, x]:
+        if connected[height - 1, x] == 1:
             cv2.floodFill(connected, flood, (x, height - 1), 2)
     for y in range(height):
-        if connected[y, 0]:
+        if connected[y, 0] == 1:
             cv2.floodFill(connected, flood, (0, y), 2)
-        if connected[y, width - 1]:
+        if connected[y, width - 1] == 1:
             cv2.floodFill(connected, flood, (width - 1, y), 2)
     return connected == 2
 
