@@ -79,14 +79,14 @@ def _border_background_mask(image_bgr: np.ndarray, cfg: dict) -> np.ndarray | No
     flood = np.zeros((height + 2, width + 2), dtype=np.uint8)
     connected = candidate.copy()
     for x in range(width):
-        if connected[0, x]:
+        if connected[0, x] == 1:
             cv2.floodFill(connected, flood, (x, 0), 2)
-        if connected[height - 1, x]:
+        if connected[height - 1, x] == 1:
             cv2.floodFill(connected, flood, (x, height - 1), 2)
     for y in range(height):
-        if connected[y, 0]:
+        if connected[y, 0] == 1:
             cv2.floodFill(connected, flood, (0, y), 2)
-        if connected[y, width - 1]:
+        if connected[y, width - 1] == 1:
             cv2.floodFill(connected, flood, (width - 1, y), 2)
     return connected == 2
 
@@ -220,7 +220,7 @@ def quantize_image_to_grid(
     if not block_colors:
         raise ValueError('palette must contain at least one block colour.')
     lab_palette = _palette_lab(palette, empty_rgb, block_colors)
-    background_mask = None if not bool(cfg.get('border_background_detection', True)) else _border_background_mask(image_bgr, cfg)
+    background_mask = _border_background_mask(image_bgr, cfg)
     colour_masks = _colour_masks(image_bgr, block_colors, cfg)
     grid = np.empty((grid_rows, grid_cols), dtype=object)
 
@@ -250,19 +250,11 @@ def quantize_image_to_grid(
                 grid[row, col] = BACKGROUND
                 continue
 
-            if background_mask is not None:
-                fg_bool = ~background_mask[ys, xs]
-                mask_area = max(1, int(fg_bool.sum()))
-                mask_scores = {
-                    colour_name: float(np.count_nonzero(mask[ys, xs][fg_bool])) / float(mask_area)
-                    for colour_name, mask in colour_masks.items()
-                }
-            else:
-                mask_area = max(1, sample.shape[0] * sample.shape[1])
-                mask_scores = {
-                    colour_name: float(np.count_nonzero(mask[ys, xs])) / float(mask_area)
-                    for colour_name, mask in colour_masks.items()
-                }
+            mask_area = max(1, sample.shape[0] * sample.shape[1])
+            mask_scores = {
+                colour_name: float(np.count_nonzero(mask[ys, xs])) / float(mask_area)
+                for colour_name, mask in colour_masks.items()
+            }
             grid[row, col] = _vote_cell_colour(
                 pixels,
                 block_colors,
@@ -422,7 +414,7 @@ def _dominant_neighbour_colour(
     for row, col in cells:
         for nr in range(max(0, row - 1), min(rows, row + 2)):
             for nc in range(max(0, col - 1), min(cols, col + 2)):
-                if (nr, nc) in inside:
+                if (nr, nc) in inside or (nr == row and nc == col):
                     continue
                 colour = str(grid[nr, nc])
                 if colour in NON_BLOCK_COLORS or colour in ignored:
@@ -443,7 +435,7 @@ def _neighbour4(row: int, col: int, rows: int, cols: int):
 
 def _remove_single_cell_runs(grid: np.ndarray) -> np.ndarray:
     fixed = np.asarray(grid, dtype=object).copy()
-    for _ in range(fixed.shape[1]):
+    for _ in range(3):
         original = fixed.copy()
         changed = False
         for row in range(fixed.shape[0]):

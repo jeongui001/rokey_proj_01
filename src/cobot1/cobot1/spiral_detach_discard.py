@@ -44,7 +44,6 @@ MOTION_SETTLE_WAIT_SEC = 0.2
 DETACH_APPROACH_HEIGHT_MM = 50.0
 DETACH_LIFT_HEIGHT_MM = 100.0
 BASKET_APPROACH_HEIGHT_MM = 80.0
-REPRESS_APPROACH_HEIGHT_MM = 50.0  # 재결합 누르기 접근 높이
 
 # 결합 해제 후 바스켓 이동 전 안전 고도 (mm)
 DETACH_TRANSIT_Z_MM = 270.0
@@ -54,9 +53,9 @@ TRAVERSE_LINEAR_VELOCITY: List[float] = [240.0, 240.0]
 TRAVERSE_LINEAR_ACCELERATION: List[float] = [120.0, 120.0]
 
 SPIRAL_TRIALS: Tuple[Tuple[float, float, float], ...] = (
-    (1.0, 0.8, 1.0),
-    (1.0, 0.8, 1.0),
-    (1.0, 0.8, 1.0),
+    (1.0, 1.0, 0.3),
+    (1.0, 1.0, 0.3),
+    (1.0, 1.0, 0.5),
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -123,7 +122,6 @@ class DetachDiscardTask:
     color: str
     detach_pose: CartesianPose
     basket_pose: CartesianPose
-    repress_pose: Optional[CartesianPose] = None
     pre_press: bool = False
 
 
@@ -196,7 +194,7 @@ def execute_detach_discard(
     controller.move_linear(detach_approach_pose, "DETACH_APPROACH",
                            vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
 
-    # 1.5. 최상단 블록: spiral 전 선행 누르기 (재결합 눌러주는 블록이 없으므로 안정화)
+    # 1.5. 제거 예정 블록을 spiral 전에 눌러 결합 상태를 안정화
     if task.pre_press:
         _step("PREPRESS_GRIP")
         controller.rg2_grip()
@@ -271,29 +269,6 @@ def execute_detach_discard(
     controller.move_linear(basket_approach_pose, "BASKET_LIFT",
                            vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
     wait(MOTION_SETTLE_WAIT_SEC)
-
-    # 12. 재결합 누르기 — 상위 블록 해제 후 하단 블록 흔들림 방지
-    if task.repress_pose is not None:
-        repress_approach_pose = _add_z(task.repress_pose, REPRESS_APPROACH_HEIGHT_MM)
-
-        _step("REPRESS_APPROACH")
-        controller.move_linear(repress_approach_pose, "REPRESS_APPROACH",
-                               vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
-
-        _step("REPRESS_GRIP")
-        controller.rg2_grip()
-
-        _step("REPRESS_DESCEND")
-        controller.force_press(task.repress_pose)
-
-        _step("REPRESS_LIFT")
-        controller.move_linear(repress_approach_pose, "REPRESS_LIFT",
-                               vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
-
-        _step("REPRESS_RELEASE")
-        controller.rg2_release()
-
-        logger.info(f"[{task.task_id}] 재결합 누르기 완료")
 
     logger.info(
         f"[{task.task_id}] 결합 해제 및 폐기 완료 — color={task.color}"

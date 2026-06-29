@@ -68,12 +68,18 @@ class BridgeNode(Node):
             @self._sio.on('upload_image', namespace='/bridge')
             def on_upload_image(data):
                 self._bridge.get_logger().info('이미지 분석 요청 수신')
-                cv_image = self._decode_image(data.get('image_data', ''))
-                self._bridge._current_image_data = data
-                self._bridge._grid_rows = int(data.get('grid_rows', 8))
-                self._bridge._grid_cols = int(data.get('grid_cols', 16))
-                self._bridge._roi_selected = bool(data.get('roi_selected', False))
-                self._bridge.handle_analyze(cv_image)
+                try:
+                    cv_image = self._decode_image(data.get('image_data', ''))
+                    if cv_image is None:
+                        raise ValueError('이미지 디코딩에 실패했습니다.')
+                    self._bridge._current_image_data = data
+                    self._bridge._grid_rows = int(data.get('grid_rows', 8))
+                    self._bridge._grid_cols = int(data.get('grid_cols', 16))
+                    self._bridge._roi_selected = bool(data.get('roi_selected', False))
+                    self._bridge.handle_analyze(cv_image)
+                except Exception as exc:
+                    self._bridge.get_logger().error(f'이미지 분석 요청 실패: {exc}')
+                    self.send_analysis_result(False, error_message=str(exc))
 
             @self._sio.on('update_grid', namespace='/bridge')
             def on_update_grid(data):

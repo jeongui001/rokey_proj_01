@@ -1,6 +1,13 @@
 import numpy as np
 import pytest
-from cobot1.webcam_checker_node import count_circles, crop_roi
+from cobot1.webcam_checker_node import (
+    HOUGH_PARAMS,
+    count_circles,
+    perspective_crop,
+)
+
+
+TEST_HOUGH = next(iter(HOUGH_PARAMS.values()))
 
 
 def _make_circle_image(n: int, size: int = 200) -> np.ndarray:
@@ -19,28 +26,31 @@ import cv2  # noqa: E402 (import after helper that uses it)
 
 def test_count_circles_zero():
     blank = np.zeros((200, 200, 3), dtype=np.uint8)
-    assert count_circles(blank) == 0
+    assert count_circles(blank, TEST_HOUGH) == 0
 
 
 def test_count_circles_four():
     img = _make_circle_image(4)
-    result = count_circles(img)
+    result = count_circles(img, TEST_HOUGH)
     assert result >= 4
 
 
 def test_count_circles_six():
     img = _make_circle_image(6, size=300)
-    result = count_circles(img)
+    result = count_circles(img, TEST_HOUGH)
     assert result >= 6
 
 
-def test_crop_roi_none_returns_original():
+def test_perspective_crop_none_returns_original():
     img = np.zeros((100, 100, 3), dtype=np.uint8)
-    result = crop_roi(img, None)
+    result = perspective_crop(img, None)
     assert result is img
 
 
-def test_crop_roi_applies_crop():
+def test_perspective_crop_applies_crop():
     img = np.zeros((100, 100, 3), dtype=np.uint8)
-    result = crop_roi(img, (10, 20, 50, 30))
+    result = perspective_crop(
+        img,
+        [(10, 20), (60, 20), (60, 50), (10, 50)],
+    )
     assert result.shape == (30, 50, 3)

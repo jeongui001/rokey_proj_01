@@ -17,7 +17,6 @@ mosaic:
   grid_line_thickness: 1
 
 grid_projection:
-  border_background_detection: false
   inner_cell_ratio: 0.90
   background_lab_distance: 34.0
   unknown_lab_distance: 96.0
@@ -40,3 +39,26 @@ grid_projection:
   blue_dark_min_saturation: 100
   blue_dark_min_value: 70
   overlay_alpha: 0.42
+
+verification:
+  settle_delay_sec: 0.75
+  confidence_threshold: 0.70
+  match_rate: 0.80
+  empty_aliases: ["", empty, background, unknown]
+  roi:
+    x: 0
+    y: 0
+    width: 0
+    height: 0
+  front_plane:
+    enabled: true
+    top_left_corner_px: [95, 211]
+    top_right_corner_px: [491, 193]
+    bottom_right_corner_px: [497, 425]
+    bottom_left_corner_px: [104, 444]
+    crop_margin_px: 24
+    cell_roi_scale: 0.82
+    min_color_fraction: 0.25
+    min_vertical_fill: 0.35
+    min_bottom_fill: 0.08
+    color_lab_threshold: 72.0

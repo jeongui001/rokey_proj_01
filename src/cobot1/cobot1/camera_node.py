@@ -23,6 +23,7 @@ class CameraNode(Node):
         self.declare_parameter('image_topic', '')
         self.declare_parameter('camera_info_topic', '')
         self.declare_parameter('camera_info_url', '')
+        self.declare_parameter('flip_horizontal', False)
         self.declare_parameter('brightness', -1)
         self.declare_parameter('contrast', -1)
         self.declare_parameter('saturation', -1)
@@ -39,6 +40,7 @@ class CameraNode(Node):
         self._height = int(self.get_parameter('image_height').value)
         self._framerate = max(1.0, float(self.get_parameter('framerate').value))
         self._camera_name = str(self.get_parameter('camera_name').value)
+        self._flip_horizontal = bool(self.get_parameter('flip_horizontal').value)
 
         image_topic = str(self.get_parameter('image_topic').value) or f'/{self._camera_name}/image_raw'
         info_topic = str(self.get_parameter('camera_info_topic').value) or f'/{self._camera_name}/camera_info'
@@ -91,6 +93,8 @@ class CameraNode(Node):
             self.get_logger().warn('카메라 프레임을 읽지 못했습니다. 다시 연결을 시도합니다.')
             self._open_capture()
             return
+        if self._flip_horizontal:
+            frame = cv2.flip(frame, 1)
 
         stamp = self.get_clock().now().to_msg()
         image_msg = self._bridge.cv2_to_imgmsg(frame, encoding='bgr8')
@@ -108,7 +112,15 @@ class CameraNode(Node):
         info_msg.p = list(self._camera_info.p)
         info_msg.header.stamp = stamp
         info_msg.header.frame_id = self._frame_id
+        if self._flip_horizontal:
+            self._mirror_camera_info(info_msg)
         self._info_pub.publish(info_msg)
+
+    def _mirror_camera_info(self, info_msg: CameraInfo) -> None:
+        if len(info_msg.k) >= 9 and info_msg.k[0] > 0.0:
+            info_msg.k[2] = float(info_msg.width - 1) - float(info_msg.k[2])
+        if len(info_msg.p) >= 12 and info_msg.p[0] > 0.0:
+            info_msg.p[2] = float(info_msg.width - 1) - float(info_msg.p[2])
 
     def _load_camera_info(self) -> CameraInfo:
         path = self._resolve_camera_info_path(str(self.get_parameter('camera_info_url').value))

@@ -37,11 +37,10 @@ def fit_image(
         return image.copy()
 
     if mode == 'center_crop':
-        aspect = _positive_aspect(target_aspect, 1.0)
-        crop_w, crop_h = _window_for_aspect(width, height, aspect)
-        y0 = (height - crop_h) // 2
-        x0 = (width - crop_w) // 2
-        return image[y0:y0 + crop_h, x0:x0 + crop_w].copy()
+        side = min(height, width)
+        y0 = (height - side) // 2
+        x0 = (width - side) // 2
+        return image[y0:y0 + side, x0:x0 + side].copy()
 
     if mode == 'smart_crop':
         aspect = _positive_aspect(target_aspect, width / float(height))

@@ -21,7 +21,6 @@ from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
-from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 import DR_init
 
@@ -83,12 +82,30 @@ PICK_PRE_GRIP_WAIT_SEC: float = 0.3
 PLACE_APPROACH_OFFSET_BASE_MM: float = 40.0
 
 # Place 최종 하강 전용 저속 설정
-PLACE_LINEAR_VELOCITY: List[float] = [10.0, 10.0]
-PLACE_LINEAR_ACCELERATION: List[float] = [10.0, 10.0]
+PLACE_LINEAR_VELOCITY: List[float] = [30.0, 30.0]
+PLACE_LINEAR_ACCELERATION: List[float] = [5.0, 5.0]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Force 제어 설정 — PLACE_DESCEND(블록 삽입 하강) 전용
+# ─────────────────────────────────────────────────────────────────────────────
+# Z축 목표 힘 (N): 블록을 삽입할 때 아래 방향으로 가하는 힘. 너무 크면 블록/트레이 파손.
+PLACE_FORCE_Z_N: float = 9
+
+# Z축 강성 (N/m): 낮을수록 Z 방향이 유연. 권장 범위 200~500. 값 높이면 힘이 빠르게 쌓임.
+PLACE_Z_STIFFNESS: float = 300.0
+
+# XY축 강성 (N/m): 높을수록 X·Y 위치 고정. 권장 범위 3000~5000.
+PLACE_XY_STIFFNESS: float = 3000.0
+
+# 회전축 강성 (Nm/rad): 낮을수록 자세가 유연. 권장 범위 200~500.
+PLACE_ROT_STIFFNESS: float = 200.0
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. RG2 설정
 # ─────────────────────────────────────────────────────────────────────────────
+# Pick 하강 완료 후 그립 전 대기 (초)
+PICK_PRE_GRIP_WAIT_SEC = 0.3
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. Place 고정 설정
@@ -104,33 +121,6 @@ PLACE_BASE_Z_MM = 5.0
 PLACE_A_DEG = 170.0
 PLACE_B_DEG = -180.0
 PLACE_C_DEG = 170.0
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Force 제어 설정 — PLACE_DESCEND(블록 삽입 하강) 전용
-# ─────────────────────────────────────────────────────────────────────────────
-# Z축 목표 힘 (N): 블록을 삽입할 때 아래 방향으로 가하는 힘. 너무 크면 블록/트레이 파손.
-PLACE_FORCE_Z_N: float = 8.5
-
-# Z축 강성 (N/m): 낮을수록 Z 방향이 유연. 권장 범위 200~500. 값 높이면 힘이 빠르게 쌓임.
-PLACE_Z_STIFFNESS: float = 200.0
-
-# XY축 강성 (N/m): 높을수록 X·Y 위치 고정. 권장 범위 3000~5000.
-PLACE_XY_STIFFNESS: float = 3000.0
-
-# 회전축 강성 (Nm/rad): 낮을수록 자세가 유연. 권장 범위 200~500.
-PLACE_ROT_STIFFNESS: float = 200.0
-
-# Z 하한 보호 오프셋 (mm): actual_place_z - 이 값 이하로 내려가지 않음. 블록·트레이 보호.
-PLACE_FORCE_Z_LIMIT_OFFSET_MM: float = 3.0
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 결합 보조 Spiral 설정 — compliance ON 상태에서 핀홀 탐색용
-# ─────────────────────────────────────────────────────────────────────────────
-PLACE_SPIRAL_REV: float = 0.5       # 회전수: 반 바퀴, 가볍게 탐색
-PLACE_SPIRAL_RMAX_MM: float = 0.5   # 최대 반경(mm): 핀홀 공차 범위 내
-PLACE_SPIRAL_LMAX_MM: float = 0.0   # Z 이동량(mm): 0 → Z는 compliance에 맡김
-PLACE_SPIRAL_VEL: List[float] = [4.0, 4.0]
-PLACE_SPIRAL_ACC: List[float] = [4.0, 4.0]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. Queue 이동 정책
@@ -312,7 +302,7 @@ KITTING_TRAY_PROFILES = {
             color="blue",
             block_type="2x2",
             overhead_pose=CartesianPose(496.35, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(496.35, -101.5,  17.50, 90.00, -149.8, 90.38),
+            pick_pose=CartesianPose(496.35, -100,  17.50, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
         "3x2": KittingTrayProfile(
@@ -406,7 +396,6 @@ class RobotMotionController:
             DR_BASE,
             DR_TOOL,
             DR_MV_MOD_REL,
-            DR_AXIS_Z,
             get_current_posx,
             set_digital_output,
             get_digital_input,
@@ -419,7 +408,6 @@ class RobotMotionController:
             release_compliance_ctrl,
             set_desired_force,
             DR_FC_MOD_ABS,
-            move_spiral,
         )
         from DR_common2 import posj
 
@@ -446,8 +434,6 @@ class RobotMotionController:
         self._release_compliance_ctrl = release_compliance_ctrl
         self._set_desired_force = set_desired_force
         self._DR_FC_MOD_ABS = DR_FC_MOD_ABS
-        self._move_spiral = move_spiral
-        self._DR_AXIS_Z = DR_AXIS_Z
 
         self._logger.info("RobotMotionController 초기화 완료")
 
@@ -493,14 +479,23 @@ class RobotMotionController:
             f"x={pose.x_mm:.2f}  y={pose.y_mm:.2f}  z={pose.z_mm:.2f}  "
             f"a={pose.a_deg:.2f}  b={pose.b_deg:.2f}  c={pose.c_deg:.2f}"
         )
-        _target = to_posx(pose)
 
         if async_mode:
             # amovel: 컨트롤러가 큐에 등록하고 즉시 응답 → Python 바로 리턴
-            ret = self._amovel(_target, vel=_vel, acc=_acc, ref=self._DR_BASE)
+            ret = self._amovel(
+                to_posx(pose),
+                vel=_vel,
+                acc=_acc,
+                ref=self._DR_BASE,
+            )
         else:
             # movel: 컨트롤러가 이동 완료 후 응답 → Python 블록
-            ret = self._movel(_target, vel=_vel, acc=_acc, ref=self._DR_BASE)
+            ret = self._movel(
+                to_posx(pose),
+                vel=_vel,
+                acc=_acc,
+                ref=self._DR_BASE,
+            )
             self._mwait()
 
         if ret == -1:
@@ -588,7 +583,7 @@ class RobotMotionController:
         )
         self.move_linear(
             pose,
-            "REPRESS_DESCEND",
+            "PREPRESS_DESCEND",
             vel=PLACE_LINEAR_VELOCITY,
             acc=PLACE_LINEAR_ACCELERATION,
         )
@@ -702,10 +697,10 @@ class RobotMotionController:
         _step("KITTING_PICK_DESCEND")
         self.move_linear(profile.pick_pose, "KITTING_PICK_DESCEND")
 
-        # 3. Pick Pose 도달 후 정지 + 웹캠 검사
+        # 4. Pick Pose 도달 후 정지 + 웹캠 검사
         _step("KITTING_PRE_GRIP_WAIT")
         self._node._check_block(task.block_type_str, task.color)
-        time.sleep(PICK_PRE_GRIP_WAIT_SEC)
+        self._wait(PICK_PRE_GRIP_WAIT_SEC)
 
         # 5. RG2 grip (Digital I/O — wait_digital_input으로 완료 대기)
         _step("KITTING_GRIP")
@@ -814,7 +809,7 @@ class RobotMotionController:
                          vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
 
         # 2a. overhead → 전환점까지 고속 하강 (공중 구간)
-        #     전환점 = actual_place_z + PLACE_APPROACH_OFFSET_BASE_MM
+        #     전환점 = actual_place_z + PLACE_APPROACH_OFFSET_BASE_MM (고정 오프셋, 층별 누적 없음)
         _step("PLACE_PRE_DESCEND")
         place_approach_z = actual_place_z + PLACE_APPROACH_OFFSET_BASE_MM
         pre_descend_pose = CartesianPose(
@@ -829,13 +824,11 @@ class RobotMotionController:
                          vel=TRAVERSE_LINEAR_VELOCITY, acc=TRAVERSE_LINEAR_ACCELERATION)
 
         # 2b. Force 제어로 블록 삽입 최종 하강 (블록 삽입 구간)
-        #     Z 하한 보호: actual_place_z - PLACE_FORCE_Z_LIMIT_OFFSET_MM 이하로 안 내려감
         _step("PLACE_DESCEND")
-        z_lower_limit = actual_place_z - PLACE_FORCE_Z_LIMIT_OFFSET_MM
         force_place_pose = CartesianPose(
             x_mm=PLACE_FIXED_X_MM,
             y_mm=place_y_mm,
-            z_mm=max(actual_place_z, z_lower_limit),
+            z_mm=actual_place_z,
             a_deg=PLACE_A_DEG,
             b_deg=PLACE_B_DEG,
             c_deg=PLACE_C_DEG,
@@ -861,16 +854,6 @@ class RobotMotionController:
             "PLACE_DESCEND",
             vel=PLACE_LINEAR_VELOCITY,
             acc=PLACE_LINEAR_ACCELERATION,
-        )
-        self._move_spiral(
-            rev=PLACE_SPIRAL_REV,
-            rmax=PLACE_SPIRAL_RMAX_MM,
-            lmax=PLACE_SPIRAL_LMAX_MM,
-            vel=PLACE_SPIRAL_VEL,
-            acc=PLACE_SPIRAL_ACC,
-            time=0.0,
-            axis=self._DR_AXIS_Z,
-            ref=self._DR_BASE,
         )
         self._release_compliance_ctrl()
 
@@ -907,34 +890,6 @@ class RobotMotionController:
 # ─────────────────────────────────────────────────────────────────────────────
 # 15. RobotControllerNode — Action Server 통합
 # ─────────────────────────────────────────────────────────────────────────────
-
-class _ForceDetectorNode(Node):
-    """force_monitor_node의 /robot/force_detected를 수신해 pause_event를 제어하는 노드.
-
-    force_monitor_node가 DRFL 직접 연결로 외력을 감지하고 토픽을 발행한다.
-    이 노드는 pause_executor에서 실행되므로 movel 중에도 콜백이 처리된다.
-    """
-
-    def __init__(self, pause_event: Event) -> None:
-        super().__init__('robot_controller_force_detector')
-        self._pause_event = pause_event
-        self._triggered   = False
-
-        self.create_subscription(Bool, '/robot/force_detected', self._on_msg, 10)
-        self.create_timer(0.5, self._check_resume)
-        self.get_logger().info('ForceDetector 시작: /robot/force_detected 구독 중')
-
-    def _on_msg(self, msg: Bool) -> None:
-        if not msg.data or self._triggered:
-            return
-        self._triggered = True
-        self._pause_event.clear()
-        self.get_logger().warn('외력 감지 수신: 다음 _step()에서 정지')
-
-    def _check_resume(self) -> None:
-        if self._triggered and self._pause_event.is_set():
-            self._triggered = False
-
 
 class _PauseServiceNode(Node):
     """pause_event를 전용 executor에서 제어하는 독립 노드."""
@@ -1035,6 +990,7 @@ class RobotControllerNode(Node):
                 f'블록 감지 실패 ({res.detected_circles}개 검출) — 재개 시 재시도'
             )
             self._pause_event.wait()  # 사용자가 UI에서 재개 누를 때까지 블로킹
+
 
     def cancel_callback(self, _goal_handle) -> CancelResponse:
         """취소 요청을 항상 수락한다. 실제 중단은 execute_callback 루프에서 처리."""
@@ -1176,7 +1132,7 @@ class RobotControllerNode(Node):
                     f"역순 결합 해제 시작: {len(placed_blocks)}개 블록"
                 )
 
-                for detach_idx, (color, y, si) in enumerate(reversed(placed_blocks)):
+                for color, y, si in reversed(placed_blocks):
                     self._pause_event.wait()
 
                     if goal_handle.is_cancel_requested:
@@ -1194,19 +1150,6 @@ class RobotControllerNode(Node):
                         c_deg=PLACE_C_DEG,
                     )
 
-                    # si > 0 이면 바로 아래 블록(si-1, 같은 Y열)을 재결합 누르기 대상으로 설정
-                    repress_pose = None
-                    if si > 0:
-                        repress_z = PLACE_BASE_Z_MM + (si - 1) * STACK_PITCH_MM
-                        repress_pose = DetachPose(
-                            x_mm=PLACE_FIXED_X_MM,
-                            y_mm=y,
-                            z_mm=repress_z,
-                            a_deg=PLACE_A_DEG,
-                            b_deg=PLACE_B_DEG,
-                            c_deg=PLACE_C_DEG,
-                        )
-
                     basket_pose = DetachPose(
                         x_mm=PLACE_FIXED_X_MM,
                         y_mm=410.0,
@@ -1221,8 +1164,7 @@ class RobotControllerNode(Node):
                         color=color,
                         detach_pose=detach_pose,
                         basket_pose=basket_pose,
-                        repress_pose=repress_pose,
-                        pre_press=True,
+                        pre_press=(si > 0),
                     )
                     execute_detach_discard(self._motion_controller, detach_task)
 
@@ -1266,11 +1208,9 @@ def main(args=None) -> None:
 
     node = RobotControllerNode(pause_event)
     pause_node = _PauseServiceNode(pause_event)
-    force_node = _ForceDetectorNode(pause_event)
 
     pause_executor = SingleThreadedExecutor()
     pause_executor.add_node(pause_node)
-    pause_executor.add_node(force_node)
     pause_thread = Thread(target=pause_executor.spin, daemon=True)
     pause_thread.start()
 
@@ -1288,10 +1228,8 @@ def main(args=None) -> None:
         node.destroy_node()
         node._webcam_node.destroy_node()
         pause_node.destroy_node()
-        force_node.destroy_node()
         rclpy.shutdown()
 
 
 if __name__ == "__main__":
     main()
-
