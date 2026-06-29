@@ -17,9 +17,9 @@ PAUSE_SERVICE = '/robot/pause'
 CHECK_SERVICE = '/webcam/check_block'
 
 # 블록 유형별 합격 원 개수
-REQUIRED_CIRCLES = {
-    1: 4,  # 2x2
-    2: 6,  # 3x2
+CIRCLE_RANGE = {
+    1: (3, 5),  # 2x2: 3~5개
+    2: (5, 7),  # 3x2: 5~7개
 }
 
 # 4점 좌표 [(x1,y1),(x2,y2),(x3,y3),(x4,y4)] 시계 방향 (좌상→우상→우하→좌하).
@@ -197,14 +197,15 @@ class WebcamCheckerNode(Node):
     ) -> CheckBlock.Response:
         block_type = int(request.block_type)
         color = str(request.color).strip().lower()
-        required = REQUIRED_CIRCLES.get(block_type)
+        circle_range = CIRCLE_RANGE.get(block_type)
 
-        if required is None:
+        if circle_range is None:
             response.passed = False
             response.detected_circles = 0
             response.message = f'알 수 없는 block_type: {block_type}'
             self.get_logger().error(response.message)
             return response
+        min_circles, max_circles = circle_range
 
         frame = self._capture_frame()
         if frame is None:
@@ -226,17 +227,17 @@ class WebcamCheckerNode(Node):
             cv2.imwrite(f'{self._debug_dir}/{tag}_3_result.jpg', annotated)
 
         response.detected_circles = min(detected, 255)
-        result_msg = f'허프 원 검출: {detected}개 / 필요 {required}개 ({block_type}형 {color})'
+        result_msg = f'허프 원 검출: {detected}개 / 허용 {min_circles}~{max_circles}개 ({block_type}형 {color})'
         self.get_logger().info(result_msg)
         print(f'[webcam_checker] {result_msg}', flush=True)
 
-        if detected == required:
+        if min_circles <= detected <= max_circles:
             response.passed = True
-            response.message = f'합격: {detected}개 검출 (필요 {required}개)'
+            response.message = f'합격: {detected}개 검출 (허용 {min_circles}~{max_circles}개)'
             self.get_logger().info(response.message)
         else:
             response.passed = False
-            response.message = f'불합격: {detected}개 검출 (필요 {required}개)'
+            response.message = f'불합격: {detected}개 검출 (허용 {min_circles}~{max_circles}개)'
             self.get_logger().warn(response.message)
             self._call_pause()
 
@@ -246,7 +247,7 @@ class WebcamCheckerNode(Node):
 def main(args=None) -> None:
     rclpy.init(args=args)
     node = WebcamCheckerNode()
-    executor = MultiThreadedExecutor(num_threads=2)
+    executor = MultiThreadedExecutor(num_threads=3)
     executor.add_node(node)
     try:
         executor.spin()

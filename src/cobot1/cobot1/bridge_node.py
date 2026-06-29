@@ -377,7 +377,10 @@ class BridgeNode(Node):
 
     def _on_force_detected(self, msg):
         if msg.data:
-            self.get_logger().warn('외력 감지 수신 — 브라우저 로그 전송')
+            self.get_logger().warn('외력 감지 수신 — 일시정지 요청')
+            req = SetBool.Request()
+            req.data = True
+            self.pause_client.call_async(req)
             self._flask.send_system_log('⚠️ 외력 감지: 현재 동작 완료 후 정지')
 
     def cancel_assembly(self):

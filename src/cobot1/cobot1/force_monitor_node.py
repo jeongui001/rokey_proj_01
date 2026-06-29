@@ -33,7 +33,7 @@ class ForceMonitorNode(Node):
 
         self.declare_parameter('robot_ip',            _DEFAULT_IP)
         self.declare_parameter('robot_port',          _DEFAULT_PORT)
-        self.declare_parameter('torque_threshold_nm', 10.0)
+        self.declare_parameter('torque_threshold_nm', 15.0)
         self.declare_parameter('poll_hz',             100.0)
         self.declare_parameter('reset_below_count',   20)
 

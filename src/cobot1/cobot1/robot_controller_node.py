@@ -317,7 +317,7 @@ KITTING_TRAY_PROFILES = {
             color="blue",
             block_type="3x2",
             overhead_pose=CartesianPose(549.46, -97.78, 270.22, 89.97, -179.68, 90.34),
-            pick_pose=CartesianPose(549.46, -110.0,  18.0, 90.00, -149.8, 90.38),
+            pick_pose=CartesianPose(549.46, -107.0,  25.0, 90.00, -149.8, 90.38),
             tool_retract_z_mm=-40.0,
         ),
     },

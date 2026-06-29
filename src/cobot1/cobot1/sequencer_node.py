@@ -1,3 +1,4 @@
+import math
 from itertools import product as iter_product
 
 import rclpy
@@ -17,7 +18,7 @@ class SequencerNode(Node):
         self.declare_parameter('start_x', 332.0)
         self.declare_parameter('y_col0', 317.95)      # col=0 셀 중심 Y (mm)
         self.declare_parameter('cell_pitch', 15.9)
-        self.declare_parameter('beam_width', 5)
+        self.declare_parameter('beam_width', 15)
         self.declare_parameter('empty_color', 'empty')
 
         self.srv = self.create_service(
@@ -170,7 +171,7 @@ class SequencerNode(Node):
         # 나머지 행 (아래→위)
         for layer in range(1, grid_height):
             row = grid_height - 1 - layer
-            weight = grid_height - layer
+            weight = math.sqrt(grid_height - layer)
 
             runs = self._find_runs(grid[row], empty_color)
             if not runs:

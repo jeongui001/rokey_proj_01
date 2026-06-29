@@ -62,7 +62,7 @@ class CameraNode(Node):
         source = int(self._device) if self._device.isdigit() else self._device
         self._capture = cv2.VideoCapture(source)
         if not self._capture.isOpened():
-            self.get_logger().error(f'카메라를 열 수 없습니다: {self._device}')
+            # self.get_logger().error(f'카메라를 열 수 없습니다: {self._device}')
             return
 
         self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, float(self._width))
