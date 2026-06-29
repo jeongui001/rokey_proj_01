@@ -424,6 +424,102 @@ class GridCanvas(QWidget):
         self.update()
 
 # ══════════════════════════════════════════════════════════════════════════════
+# 설계도 캔버스 (읽기 전용, 진행 오버레이 포함)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BlueprintCanvas(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.grid_w = 16
+        self.grid_h = 8
+        self.grid: list[list[str]] = [[""] * 16 for _ in range(8)]
+        self.block_map: list[list[int]] | None = None
+        self.current_step = -1
+        self.setMinimumWidth(480)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setStyleSheet("border: 1px solid #30363d; border-radius: 4px;")
+        self._recalc_height()
+
+    def _recalc_height(self):
+        w = max(self.width(), 480)
+        h = max(self.grid_h,
+                int(w * (self.grid_h * CELL_ASPECT_H) / (self.grid_w * CELL_ASPECT_W)))
+        self.setFixedHeight(h)
+
+    def resizeEvent(self, e):
+        self._recalc_height()
+
+    def _cell_size(self):
+        return self.width() / self.grid_w, self.height() / self.grid_h
+
+    def load(self, grid: list, grid_w: int, grid_h: int, block_map=None):
+        self.grid_w = grid_w
+        self.grid_h = grid_h
+        self.grid = [row[:] for row in grid]
+        self.block_map = block_map
+        self.current_step = -1
+        self._recalc_height()
+        self.update()
+
+    def set_progress(self, current_step: int):
+        self.current_step = current_step
+        self.update()
+
+    def paintEvent(self, e):
+        painter = QPainter(self)
+        cw, ch = self._cell_size()
+        painter.fillRect(self.rect(), QColor("#0d1117"))
+
+        for r in range(self.grid_h):
+            for c in range(self.grid_w):
+                color = self.grid[r][c] if r < len(self.grid) and c < len(self.grid[r]) else ""
+                bid = (self.block_map[r][c]
+                       if self.block_map and r < len(self.block_map) and c < len(self.block_map[r])
+                       else -1)
+                is_done = bid >= 0 and self.current_step >= 0 and bid < self.current_step
+                if color:
+                    painter.setOpacity(0.25 if is_done else 1.0)
+                    painter.fillRect(
+                        int(c * cw) + 1, int(r * ch) + 1,
+                        max(1, int(cw) - 2), max(1, int(ch) - 2),
+                        QColor(COLOR_HEX.get(color, "#333333")),
+                    )
+                    painter.setOpacity(1.0)
+                else:
+                    painter.fillRect(
+                        int(c * cw) + 1, int(r * ch) + 1,
+                        max(1, int(cw) - 2), max(1, int(ch) - 2),
+                        QColor("#333333"),
+                    )
+
+        if self.block_map:
+            drawn: set[int] = set()
+            for r in range(self.grid_h):
+                for c in range(self.grid_w):
+                    bid = (self.block_map[r][c]
+                           if r < len(self.block_map) and c < len(self.block_map[r])
+                           else -1)
+                    if bid < 0 or bid in drawn:
+                        continue
+                    end_c = c
+                    while end_c + 1 < self.grid_w and self.block_map[r][end_c + 1] == bid:
+                        end_c += 1
+                    is_done = self.current_step >= 0 and bid < self.current_step
+                    is_current = bid == self.current_step
+                    if is_current:
+                        painter.setPen(QPen(QColor("#ffff00"), 3))
+                    elif is_done:
+                        painter.setPen(QPen(QColor("#3a3a3a"), 1))
+                    else:
+                        painter.setPen(QPen(QColor("#bf00ff"), 2))
+                    painter.drawRect(
+                        int(c * cw), int(r * ch),
+                        int((end_c - c + 1) * cw), int(ch),
+                    )
+                    drawn.add(bid)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # 블록 맵 빌드 (JS buildBlockMap과 동일한 로직)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -718,6 +814,13 @@ class Page3(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
+        # 설계도 섹션 (상단)
+        bp_group = QGroupBox("설계도")
+        bp_vbox = QVBoxLayout(bp_group)
+        self.blueprint = BlueprintCanvas()
+        bp_vbox.addWidget(self.blueprint)
+        layout.addWidget(bp_group)
+
         # 진행 섹션
         prog_group = QGroupBox("3. 진행 상황")
         vbox = QVBoxLayout(prog_group)
@@ -763,6 +866,9 @@ class Page3(QWidget):
         layout.addWidget(log_group)
         layout.addStretch()
 
+    def load_blueprint(self, grid, grid_w, grid_h, block_map=None):
+        self.blueprint.load(grid, grid_w, grid_h, block_map)
+
     def add_log(self, level: str, text: str):
         from datetime import datetime
         ts = datetime.now().strftime("%H시 %M분 %S초")
@@ -793,6 +899,7 @@ class Page3(QWidget):
         self.lbl_status.setText(
             f"진행 중 — {data.get('current_action', '')} {data.get('current_color', '')}"
         )
+        self.blueprint.set_progress(current)
 
     def on_done(self, data: dict):
         self.lbl_status.setText("조립 완료")
@@ -881,6 +988,12 @@ class MainWindow(QMainWindow):
 
     def _on_start_assembly(self, data: dict):
         self.page3.reset()
+        self.page3.load_blueprint(
+            self.page2.canvas.grid,
+            self.page2.canvas.grid_w,
+            self.page2.canvas.grid_h,
+            self.page2.canvas.block_map,
+        )
         self.stack.setCurrentWidget(self.page3)
         self.page3.add_log("INFO", "조립 시작 요청")
         self.worker.send("start_assembly", data)
