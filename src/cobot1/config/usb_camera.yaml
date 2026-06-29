@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    video_device: /dev/video0
+    video_device: /dev/v4l/by-id/usb-046d_C270_HD_WEBCAM_200901010001-video-index0
     framerate: 30.0
     frame_id: front_camera_optical_frame
     image_width: 640
@@ -9,6 +9,7 @@
     image_topic: /front_camera/image_raw
     camera_info_topic: /front_camera/camera_info
     camera_info_url: package://cobot1/config/front_camera_info.yaml
+    flip_horizontal: true
 
     brightness: -1
     contrast: -1
