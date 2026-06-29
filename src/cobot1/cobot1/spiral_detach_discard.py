@@ -53,9 +53,9 @@ TRAVERSE_LINEAR_VELOCITY: List[float] = [240.0, 240.0]
 TRAVERSE_LINEAR_ACCELERATION: List[float] = [120.0, 120.0]
 
 SPIRAL_TRIALS: Tuple[Tuple[float, float, float], ...] = (
-    (1.0, 0.8, 1.0),
-    (1.0, 0.8, 1.0),
-    (1.0, 0.8, 1.0),
+    (1.0, 1.0, 0.3),
+    (1.0, 1.0, 0.3),
+    (1.0, 1.0, 0.5),
 )
 
 # ─────────────────────────────────────────────────────────────────────────────

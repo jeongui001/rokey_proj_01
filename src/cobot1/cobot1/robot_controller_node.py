@@ -1112,7 +1112,7 @@ class RobotControllerNode(Node):
                         color=color,
                         detach_pose=detach_pose,
                         basket_pose=basket_pose,
-                        pre_press=True,
+                        pre_press=(si > 0),
                     )
                     execute_detach_discard(self._motion_controller, detach_task)
 
