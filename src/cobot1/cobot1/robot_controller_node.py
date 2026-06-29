@@ -100,6 +100,13 @@ PLACE_XY_STIFFNESS: float = 3000.0
 # 회전축 강성 (Nm/rad): 낮을수록 자세가 유연. 권장 범위 200~500.
 PLACE_ROT_STIFFNESS: float = 200.0
 
+# 결합 보조 Spiral — Z축 힘을 유지하며 XY 정렬 후 0.3 mm 추가 하강
+PLACE_SPIRAL_REV: float = 0.5
+PLACE_SPIRAL_RMAX_MM: float = 0.5
+PLACE_SPIRAL_LMAX_MM: float = -0.3
+PLACE_SPIRAL_VEL: List[float] = [4.0, 4.0]
+PLACE_SPIRAL_ACC: List[float] = [4.0, 4.0]
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. RG2 설정
@@ -391,10 +398,12 @@ class RobotMotionController:
             movej,
             movel,
             amovel,
+            move_spiral,
             wait,
             mwait,
             DR_BASE,
             DR_TOOL,
+            DR_AXIS_Z,
             DR_MV_MOD_REL,
             get_current_posx,
             set_digital_output,
@@ -419,10 +428,12 @@ class RobotMotionController:
         self._movej = movej
         self._movel = movel
         self._amovel = amovel
+        self._move_spiral = move_spiral
         self._wait = wait
         self._mwait = mwait
         self._DR_BASE = DR_BASE
         self._DR_TOOL = DR_TOOL
+        self._DR_AXIS_Z = DR_AXIS_Z
         self._DR_MV_MOD_REL = DR_MV_MOD_REL
         self._get_current_posx = get_current_posx
         self._posj = posj
@@ -855,6 +866,22 @@ class RobotMotionController:
             vel=PLACE_LINEAR_VELOCITY,
             acc=PLACE_LINEAR_ACCELERATION,
         )
+
+        # Z축 힘을 유지한 채 XY를 미세 정렬하며 베이스 -Z 방향으로 추가 삽입
+        _step("PLACE_SPIRAL")
+        ret = self._move_spiral(
+            rev=PLACE_SPIRAL_REV,
+            rmax=PLACE_SPIRAL_RMAX_MM,
+            lmax=PLACE_SPIRAL_LMAX_MM,
+            vel=PLACE_SPIRAL_VEL,
+            acc=PLACE_SPIRAL_ACC,
+            time=0.0,
+            axis=self._DR_AXIS_Z,
+            ref=self._DR_BASE,
+        )
+        if ret == -1:
+            raise RuntimeError("결합 보조 Spiral 실행 실패")
+
         self._release_compliance_ctrl()
 
         # 3. RG2 release (Digital I/O — wait_digital_input으로 완료 대기)
