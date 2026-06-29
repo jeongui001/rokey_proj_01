@@ -36,15 +36,16 @@ COMBINATIONS = [
 ]
 
 TYPE_MAP = {"2x2": 1, "3x2": 2}
-INIT_HOUGH = dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50)
+INIT_HOUGH = dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50, clip_limit=2.0)
 
 _SLIDER_SPECS = [
-    ("dp",       "dp",        0.5, 3.0,  0.1),
-    ("min_dist", "minDist",   5,   150,   1),
-    ("param1",   "param1",    10,  250,   1),
-    ("param2",   "param2",    5,   100,   1),
-    ("min_r",    "minRadius", 1,   100,   1),
-    ("max_r",    "maxRadius", 10,  200,   1),
+    ("clip_limit", "CLAHE clip", 1.0, 8.0,  0.5),
+    ("dp",         "dp",         0.5, 3.0,  0.1),
+    ("min_dist",   "minDist",    5,   150,   1),
+    ("param1",     "param1",     10,  250,   1),
+    ("param2",     "param2",     5,   100,   1),
+    ("min_r",      "minRadius",  1,   100,   1),
+    ("max_r",      "maxRadius",  10,  200,   1),
 ]
 
 
@@ -68,7 +69,7 @@ def _load_snapshot(folder: Path) -> np.ndarray | None:
     if not snaps:
         return None
     img = cv2.imread(str(snaps[0]))
-    return cv2.cvtColor(img, cv2.COLOR_BGR2RGB) if img is not None else None
+    return img  # BGR 그대로 반환 — 노드와 동일한 파이프라인
 
 
 def _warp(image: np.ndarray, pts: list[tuple[int, int]] | None) -> np.ndarray:
@@ -83,8 +84,10 @@ def _warp(image: np.ndarray, pts: list[tuple[int, int]] | None) -> np.ndarray:
     return cv2.warpPerspective(image, M, (w, h))
 
 
-def _detect(image_rgb: np.ndarray, p: dict) -> tuple[np.ndarray, int]:
-    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+def _detect(image_bgr: np.ndarray, p: dict) -> tuple[np.ndarray, int]:
+    gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)  # 노드와 동일
+    clahe = cv2.createCLAHE(clipLimit=p.get("clip_limit", 1.0), tileGridSize=(8, 8))
+    gray = clahe.apply(gray)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
     circles = cv2.HoughCircles(
         blurred, cv2.HOUGH_GRADIENT,
@@ -92,7 +95,7 @@ def _detect(image_rgb: np.ndarray, p: dict) -> tuple[np.ndarray, int]:
         param1=p["param1"], param2=p["param2"],
         minRadius=int(p["min_r"]), maxRadius=int(p["max_r"]),
     )
-    result = image_rgb.copy()
+    result = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)  # matplotlib 표시용으로만 RGB 변환
     count = 0
     if circles is not None:
         count = int(circles.shape[1])
@@ -111,27 +114,27 @@ def _tune(label: str, warped: np.ndarray) -> dict:
 
     result, count = _detect(warped, params)
 
-    fig = plt.figure(figsize=(12, 9))
+    fig = plt.figure(figsize=(12, 10))
     fig.suptitle(label, fontsize=14, fontweight="bold")
-    ax_img = fig.add_axes([0.05, 0.35, 0.9, 0.58])
-    ax_img.set_title(f"검출 원: {count}개", fontsize=12)
+    ax_img = fig.add_axes([0.05, 0.40, 0.9, 0.54])
+    ax_img.set_title(f"Detected: {count}", fontsize=12)
     ax_img.axis("off")
     im = ax_img.imshow(result)
 
     sliders: dict[str, Slider] = {}
     for i, (key, lbl, vmin, vmax, vstep) in enumerate(_SLIDER_SPECS):
-        ax_s = fig.add_axes([0.15, 0.27 - i * 0.04, 0.65, 0.025])
+        ax_s = fig.add_axes([0.15, 0.32 - i * 0.04, 0.65, 0.025])
         sliders[key] = Slider(ax_s, lbl, vmin, vmax, valinit=params[key], valstep=vstep)
 
-    ax_btn = fig.add_axes([0.78, 0.01, 0.18, 0.05])
-    btn = Button(ax_btn, "다음 →")
+    ax_btn = fig.add_axes([0.78, 0.01, 0.18, 0.04])
+    btn = Button(ax_btn, "Next ->")
 
     def _update(_):
         for k, sl in sliders.items():
             params[k] = sl.val
         res, cnt = _detect(warped, params)
         im.set_data(res)
-        ax_img.set_title(f"검출 원: {cnt}개", fontsize=12)
+        ax_img.set_title(f"Circles detected: {cnt}", fontsize=12)
         fig.canvas.draw_idle()
 
     def _confirm(_):
@@ -170,6 +173,7 @@ def _format(
         p = hough_map[(bt, color)]
         lines.append(
             f"    ({bt}, {color!r}): dict("
+            f"clip_limit={p['clip_limit']:.1f}, "
             f"dp={p['dp']:.1f}, min_dist={int(p['min_dist'])}, "
             f"param1={int(p['param1'])}, param2={int(p['param2'])}, "
             f"min_r={int(p['min_r'])}, max_r={int(p['max_r'])}),  # {tag}"

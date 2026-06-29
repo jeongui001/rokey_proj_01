@@ -26,26 +26,25 @@ REQUIRED_CIRCLES = {
 # 키: (block_type, color). None이면 전체 이미지 사용.
 # build_config.py 실행 후 출력된 값으로 교체할 것.
 BLOCK_ROI: dict[tuple[int, str], Optional[list[tuple[int, int]]]] = {
-    (1, "yellow"): None,
-    (1, "red"):    None,
-    (1, "blue"):   None,
-    (1, "green"):  None,
-    (2, "yellow"): None,
-    (2, "red"):    None,
-    (2, "blue"):   None,
-    (2, "green"):  None,
+    (1, "blue"):   [(44, 230), (304, 221), (301, 419), (70, 421)],   # 2x2
+    (1, "green"):  [(63, 236), (323, 229), (311, 423), (89, 431)],   # 2x2
+    (1, "red"):    [(49, 234), (303, 226), (293, 429), (72, 443)],   # 2x2
+    (1, "yellow"): [(53, 236), (303, 228), (301, 418), (79, 427)],   # 2x2
+    (2, "blue"):   [(47, 188), (326, 184), (311, 475), (80, 477)],   # 3x2
+    (2, "green"):  [(60, 308), (317, 300), (307, 475), (80, 478)],   # 3x2
+    (2, "red"):    [(75, 192), (355, 181), (328, 477), (108, 477)],  # 3x2
+    (2, "yellow"): [(65, 186), (342, 178), (325, 475), (98, 477)],   # 3x2
 }
 
-# HoughCircles 파라미터 — (block_type, color)별. build_config.py 출력값으로 교체할 것.
 HOUGH_PARAMS: dict[tuple[int, str], dict] = {
-    (1, "yellow"): dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
-    (1, "red"):    dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
-    (1, "blue"):   dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
-    (1, "green"):  dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
-    (2, "yellow"): dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
-    (2, "red"):    dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
-    (2, "blue"):   dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
-    (2, "green"):  dict(dp=1.2, min_dist=20, param1=50, param2=30, min_r=5, max_r=50),
+    (1, "blue"):   dict(clip_limit=2.0, dp=1.2, min_dist=80, param1=50, param2=30, min_r=5,  max_r=39),  # 2x2
+    (1, "green"):  dict(clip_limit=2.5, dp=1.2, min_dist=77, param1=50, param2=40, min_r=6,  max_r=50),  # 2x2
+    (1, "red"):    dict(clip_limit=2.0, dp=1.2, min_dist=79, param1=50, param2=30, min_r=5,  max_r=44),  # 2x2
+    (1, "yellow"): dict(clip_limit=2.0, dp=1.2, min_dist=80, param1=50, param2=30, min_r=5,  max_r=50),  # 2x2
+    (2, "blue"):   dict(clip_limit=3.0, dp=1.2, min_dist=90, param1=50, param2=35, min_r=5,  max_r=50),  # 3x2
+    (2, "green"):  dict(clip_limit=3.0, dp=1.2, min_dist=90, param1=50, param2=30, min_r=5,  max_r=50),  # 3x2
+    (2, "red"):    dict(clip_limit=3.0, dp=1.2, min_dist=80, param1=50, param2=30, min_r=15, max_r=50),  # 3x2
+    (2, "yellow"): dict(clip_limit=2.5, dp=1.2, min_dist=80, param1=50, param2=30, min_r=5,  max_r=50),  # 3x2
 }
 
 
@@ -85,9 +84,13 @@ def perspective_crop(
     return cv2.warpPerspective(image, M, (w, h))
 
 
-def count_circles(image_bgr: np.ndarray, hough: dict) -> int:
-    """BGR 이미지에서 허프 원 변환으로 원 개수를 반환한다."""
+def detect_circles(image_bgr: np.ndarray, hough: dict) -> tuple[int, np.ndarray]:
+    """BGR 이미지에서 허프 원 변환으로 원을 검출한다.
+    Returns: (검출 개수, 원이 그려진 BGR 이미지)
+    """
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=hough.get("clip_limit", 1.0), tileGridSize=(8, 8))
+    gray = clahe.apply(gray)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
     circles = cv2.HoughCircles(
         blurred,
@@ -99,9 +102,14 @@ def count_circles(image_bgr: np.ndarray, hough: dict) -> int:
         minRadius=int(hough["min_r"]),
         maxRadius=int(hough["max_r"]),
     )
+    annotated = image_bgr.copy()
     if circles is None:
-        return 0
-    return int(circles.shape[1])
+        return 0, annotated
+    count = int(circles.shape[1])
+    for cx, cy, r in circles[0]:
+        cv2.circle(annotated, (int(cx), int(cy)), int(r), (0, 255, 0), 2)
+        cv2.circle(annotated, (int(cx), int(cy)), 3, (0, 0, 255), -1)
+    return count, annotated
 
 
 class WebcamCheckerNode(Node):
@@ -115,7 +123,26 @@ class WebcamCheckerNode(Node):
         super().__init__('webcam_checker')
 
         self.declare_parameter('video_device', '/dev/video1')
+        self.declare_parameter('debug', True)
+        self.declare_parameter('debug_dir', '/home/hwangjeongui/webcam_debug')
         self._device = str(self.get_parameter('video_device').value)
+        self._debug = bool(self.get_parameter('debug').value)
+        self._debug_dir = str(self.get_parameter('debug_dir').value)
+
+        if self._debug:
+            import os
+            os.makedirs(self._debug_dir, exist_ok=True)
+            self.get_logger().info(f'디버그 이미지 저장: {self._debug_dir}')
+
+        source = int(self._device) if self._device.isdigit() else self._device
+        self._cap = cv2.VideoCapture(source)
+        if not self._cap.isOpened():
+            self.get_logger().error(f'웹캠을 열 수 없음: {self._device}')
+
+        self._latest_frame: Optional[np.ndarray] = None
+        self._frame_lock = threading.Lock()
+        self._capture_thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._capture_thread.start()
 
         self._callback_group = ReentrantCallbackGroup()
         self._pause_client = self.create_client(SetBool, PAUSE_SERVICE)
@@ -130,19 +157,23 @@ class WebcamCheckerNode(Node):
             f'WebcamCheckerNode 준비: device={self._device}, service={CHECK_SERVICE}'
         )
 
+    def _capture_loop(self) -> None:
+        """백그라운드에서 계속 프레임을 읽어 최신 프레임만 보관한다."""
+        while True:
+            if not self._cap.isOpened():
+                break
+            ok, frame = self._cap.read()
+            if ok and frame is not None:
+                with self._frame_lock:
+                    self._latest_frame = frame
+
     def _capture_frame(self) -> Optional[np.ndarray]:
-        """웹캠에서 프레임 한 장을 캡처해 반환한다. 실패 시 None."""
-        source = int(self._device) if self._device.isdigit() else self._device
-        cap = cv2.VideoCapture(source)
-        if not cap.isOpened():
-            self.get_logger().error(f'웹캠을 열 수 없음: {self._device}')
-            return None
-        ok, frame = cap.read()
-        cap.release()
-        if not ok or frame is None:
-            self.get_logger().error('프레임 캡처 실패')
-            return None
-        return frame
+        """최신 프레임을 반환한다. 아직 없으면 None."""
+        with self._frame_lock:
+            if self._latest_frame is None:
+                self.get_logger().error('프레임 없음 — 웹캠 확인 필요')
+                return None
+            return self._latest_frame.copy()
 
     def _call_pause(self) -> None:
         """/robot/pause 서비스를 호출해 로봇을 일시정지시킨다."""
@@ -186,10 +217,20 @@ class WebcamCheckerNode(Node):
         roi = BLOCK_ROI.get((block_type, color))
         cropped = perspective_crop(frame, roi)
         hough = HOUGH_PARAMS.get((block_type, color), next(iter(HOUGH_PARAMS.values())))
-        detected = count_circles(cropped, hough)
+        detected, annotated = detect_circles(cropped, hough)
+
+        if self._debug:
+            tag = f'bt{block_type}_{color}'
+            cv2.imwrite(f'{self._debug_dir}/{tag}_1_raw.jpg', frame)
+            cv2.imwrite(f'{self._debug_dir}/{tag}_2_warped.jpg', cropped)
+            cv2.imwrite(f'{self._debug_dir}/{tag}_3_result.jpg', annotated)
 
         response.detected_circles = min(detected, 255)
-        if detected >= required:
+        result_msg = f'허프 원 검출: {detected}개 / 필요 {required}개 ({block_type}형 {color})'
+        self.get_logger().info(result_msg)
+        print(f'[webcam_checker] {result_msg}', flush=True)
+
+        if detected == required:
             response.passed = True
             response.message = f'합격: {detected}개 검출 (필요 {required}개)'
             self.get_logger().info(response.message)
@@ -212,6 +253,7 @@ def main(args=None) -> None:
     except KeyboardInterrupt:
         node.get_logger().info('WebcamCheckerNode 종료')
     finally:
+        node._cap.release()
         executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()

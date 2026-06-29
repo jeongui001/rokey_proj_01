@@ -75,6 +75,7 @@ TRAVERSE_LINEAR_ACCELERATION: List[float] = [_TRAVERSE_BASE_ACCELERATION * TRAVE
 
 # Pick 하강 속도 전환 높이 (mm): 이 높이까지는 빠르게, 이하는 느리게
 PICK_APPROACH_Z_MM: float = 100.0
+PICK_PRE_GRIP_WAIT_SEC: float = 0.3
 
 # Place 하강 Force 제어 시작 높이 베이스 오프셋 (mm)
 # 실제 전환점 = actual_place_z + PLACE_APPROACH_OFFSET_BASE_MM + stack_index * STACK_PITCH_MM
@@ -701,9 +702,10 @@ class RobotMotionController:
         _step("KITTING_PICK_DESCEND")
         self.move_linear(profile.pick_pose, "KITTING_PICK_DESCEND")
 
-        # 3. Pick Pose 도달 후 0.3초 정지
+        # 3. Pick Pose 도달 후 정지 + 웹캠 검사
         _step("KITTING_PRE_GRIP_WAIT")
         self._node._check_block(task.block_type_str, task.color)
+        time.sleep(PICK_PRE_GRIP_WAIT_SEC)
 
         # 5. RG2 grip (Digital I/O — wait_digital_input으로 완료 대기)
         _step("KITTING_GRIP")
@@ -983,20 +985,31 @@ class RobotControllerNode(Node):
             callback_group=self._action_callback_group,
         )
 
+        # 웹캠 체크 클라이언트는 별도 노드+executor로 분리
+        # (action execute_callback 안에서 call_async하면 같은 executor 내 데드락 발생)
+        import threading as _t
         from cobot1_interfaces.srv import CheckBlock as _CheckBlock
-        self._block_checker_client = self.create_client(_CheckBlock, '/webcam/check_block')
+        self._webcam_node = rclpy.create_node('webcam_check_helper')
+        self._webcam_client = self._webcam_node.create_client(_CheckBlock, '/webcam/check_block')
+        self._webcam_executor = SingleThreadedExecutor()
+        self._webcam_executor.add_node(self._webcam_node)
+        self._webcam_spin_thread = _t.Thread(target=self._webcam_executor.spin, daemon=True)
+        self._webcam_spin_thread.start()
 
         self.get_logger().info(f"Action Server 시작: {ACTION_NAME}")
 
     def _check_block(self, block_type_str: str, color: str) -> None:
         """
         웹캠 블록 검사 서비스를 동기적으로 호출한다.
-        노드가 이미 MultiThreadedExecutor에서 스핀 중이므로
-        threading.Event로 future 완료를 기다린다.
-        passed=False이면 RuntimeError를 발생시켜 액션을 abort 처리한다.
+        서비스가 실행 중이지 않으면 경고만 남기고 스킵한다.
+        실패 시 일시정지 상태로 대기하고 재개되면 재시도한다.
         """
-        return  # TODO: 웹캠 노드 준비 전 임시 비활성화
         import threading as _threading
+
+        if not self._webcam_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warn('웹캠 서비스 미실행 — 블록 감지 스킵')
+            return
+
         from cobot1_interfaces.srv import CheckBlock as _CheckBlock
 
         _type_map = {"2x2": 1, "3x2": 2}
@@ -1004,18 +1017,24 @@ class RobotControllerNode(Node):
         req.block_type = _type_map[block_type_str]
         req.color = color
 
-        future = self._block_checker_client.call_async(req)
-        done = _threading.Event()
-        future.add_done_callback(lambda _: done.set())
-        done.wait(timeout=10.0)
+        while True:
+            future = self._webcam_client.call_async(req)
+            done = _threading.Event()
+            future.add_done_callback(lambda _: done.set())
+            done.wait(timeout=10.0)
 
-        res = future.result()
-        if res is None:
-            raise RuntimeError("웹캠 서비스 응답 없음 (timeout)")
-        if not res.passed:
-            raise RuntimeError(
-                f"블록 감지 실패 ({res.detected_circles}개 검출): {res.message}"
+            res = future.result()
+            if res is None:
+                self.get_logger().warn('웹캠 서비스 응답 없음 (timeout) — 블록 감지 스킵')
+                return
+            if res.passed:
+                return
+
+            # 실패: webcam_checker_node가 이미 /robot/pause 호출해 pause_event 클리어됨
+            self.get_logger().warn(
+                f'블록 감지 실패 ({res.detected_circles}개 검출) — 재개 시 재시도'
             )
+            self._pause_event.wait()  # 사용자가 UI에서 재개 누를 때까지 블로킹
 
     def cancel_callback(self, _goal_handle) -> CancelResponse:
         """취소 요청을 항상 수락한다. 실제 중단은 execute_callback 루프에서 처리."""
@@ -1255,7 +1274,7 @@ def main(args=None) -> None:
     pause_thread = Thread(target=pause_executor.spin, daemon=True)
     pause_thread.start()
 
-    executor = MultiThreadedExecutor(num_threads=2)
+    executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
 
     try:
@@ -1265,7 +1284,9 @@ def main(args=None) -> None:
     finally:
         executor.shutdown()
         pause_executor.shutdown()
+        node._webcam_executor.shutdown()
         node.destroy_node()
+        node._webcam_node.destroy_node()
         pause_node.destroy_node()
         force_node.destroy_node()
         rclpy.shutdown()

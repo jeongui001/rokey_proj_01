@@ -37,7 +37,7 @@ COMBINATIONS = [
 ]
 
 POINT_COLORS = ["red", "lime", "blue", "orange"]
-POINT_LABELS = ["1 좌상", "2 우상", "3 우하", "4 좌하"]
+POINT_LABELS = ["1 TL", "2 TR", "3 BR", "4 BL"]
 
 # ── 전역 상태 ──────────────────────────────────────────────────────────────────
 _combo_idx: int = 0
@@ -69,14 +69,14 @@ def _update_title() -> None:
     idx = _combo_idx + 1
     if not _frozen:
         _ax.set_title(
-            f"[{idx}/{n}]  {b} {c}  —  블록 위치 조정 후 아무 곳이나 클릭",
+            f"[{idx}/{n}]  {b} {c}  —  Click anywhere to freeze",
             fontsize=12,
         )
     else:
         done = len(_points)
-        label = POINT_LABELS[done] if done < 4 else "완료"
+        label = POINT_LABELS[done] if done < 4 else "done"
         _ax.set_title(
-            f"[{idx}/{n}]  {b} {c}  —  4점 클릭 ({done}/4): {label}",
+            f"[{idx}/{n}]  {b} {c}  —  Click 4 points ({done}/4): {label}",
             fontsize=12,
         )
 
@@ -226,12 +226,12 @@ def main() -> None:
     _update_title()
 
     ax_skip = _fig.add_axes([0.75, 0.02, 0.20, 0.06])
-    btn_skip = Button(ax_skip, "건너뜀 →")
+    btn_skip = Button(ax_skip, "Skip ->")
     btn_skip.on_clicked(_on_skip)
 
     _fig.canvas.mpl_connect("button_press_event", _on_click)
 
-    animation.FuncAnimation(
+    ani = animation.FuncAnimation(
         _fig, _update_frame, fargs=(_im,),
         interval=50, blit=True, cache_frame_data=False,
     )

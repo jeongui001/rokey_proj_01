@@ -1,9 +1,13 @@
+import os
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
+WEBCAM_DEVICE = '/dev/video2'
+
 
 def generate_launch_description():
-    return LaunchDescription([
+    nodes = [
         Node(
             package='cobot1',
             executable='bridge_node',
@@ -42,13 +46,6 @@ def generate_launch_description():
         ),
         Node(
             package='cobot1',
-            executable='webcam_checker_node',
-            name='webcam_checker',
-            output='screen',
-            parameters=[{'video_device': '/dev/video2'}],
-        ),
-        Node(
-            package='cobot1',
             executable='force_monitor_node',
             name='force_monitor',
             output='screen',
@@ -59,4 +56,15 @@ def generate_launch_description():
                 'poll_hz': 100.0,
             }],
         ),
-    ])
+    ]
+
+    if os.path.exists(WEBCAM_DEVICE):
+        nodes.append(Node(
+            package='cobot1',
+            executable='webcam_checker_node',
+            name='webcam_checker',
+            output='screen',
+            parameters=[{'video_device': WEBCAM_DEVICE}],
+        ))
+
+    return LaunchDescription(nodes)
