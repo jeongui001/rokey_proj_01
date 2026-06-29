@@ -415,6 +415,7 @@ class RobotMotionController:
             add_tool,
             task_compliance_ctrl,
             release_compliance_ctrl,
+            release_force,
             set_desired_force,
             DR_FC_MOD_ABS,
         )
@@ -443,6 +444,7 @@ class RobotMotionController:
         self._OFF = OFF
         self._task_compliance_ctrl = task_compliance_ctrl
         self._release_compliance_ctrl = release_compliance_ctrl
+        self._release_force = release_force
         self._set_desired_force = set_desired_force
         self._DR_FC_MOD_ABS = DR_FC_MOD_ABS
 
@@ -586,6 +588,7 @@ class RobotMotionController:
                 PLACE_ROT_STIFFNESS,
             ]
         )
+        self._wait(0.3)
         self._set_desired_force(
             fd=[0.0, 0.0, -PLACE_FORCE_Z_N, 0.0, 0.0, 0.0],
             dir=[0, 0, 1, 0, 0, 0],
@@ -598,6 +601,8 @@ class RobotMotionController:
             vel=PLACE_LINEAR_VELOCITY,
             acc=PLACE_LINEAR_ACCELERATION,
         )
+        self._release_force()
+        self._wait(0.3)
         self._release_compliance_ctrl()
 
     # ── RG2 그리퍼 제어 (Digital I/O) ──────────────────────────────────────────
