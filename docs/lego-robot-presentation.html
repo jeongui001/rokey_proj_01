@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>이미지 기반 레고 블록 자동 조립 시스템</title>
+<link rel="stylesheet" href="../../../.claude/skills/html-ppt/assets/fonts.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../.claude/skills/html-ppt/assets/base.css">
+<link rel="stylesheet" href="../../../.claude/skills/html-ppt/assets/animations/animations.css">
+<style>
+/* ── tech-sharing dark ── */
+.tpl-ts{
+  --bg:#0d1117;--bg-soft:#161b22;--surface:#161b22;--surface-2:#1c2230;
+  --border:rgba(139,148,158,.22);--border-strong:rgba(139,148,158,.4);
+  --text-1:#e6edf3;--text-2:#8b949e;--text-3:#6e7681;
+  --accent:#7ee787;--accent-2:#79c0ff;--accent-3:#ff7b72;
+  --grad:linear-gradient(120deg,#7ee787 0%,#79c0ff 60%,#d2a8ff 100%);
+  --radius:14px;--radius-lg:20px;--shadow:0 20px 60px rgba(0,0,0,.5);
+  font-family:'Inter','Noto Sans KR',sans-serif;
+}
+body.tpl-ts{background:#0d1117;color:#e6edf3}
+.tpl-ts .slide{padding:64px 88px;background:#0d1117;color:#e6edf3;font-family:'Inter','Noto Sans KR',sans-serif;}
+.tpl-ts .slide::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(60% 50% at 90% 10%,rgba(121,192,255,.1),transparent 60%),
+  radial-gradient(50% 50% at 10% 90%,rgba(126,231,135,.06),transparent 60%);
+  pointer-events:none;z-index:0}
+.tpl-ts .slide>*{position:relative;z-index:1}
+.tpl-ts .h1{font-size:68px;line-height:1.05;font-weight:800;letter-spacing:-.02em;color:#fff}
+.tpl-ts .h2{font-size:46px;font-weight:700;letter-spacing:-.02em;color:#fff;margin-bottom:0}
+.tpl-ts h3,.tpl-ts .h3{font-size:28px;font-weight:700;color:#fff;margin:0 0 8px}
+.tpl-ts h4,.tpl-ts .h4{font-size:17px;font-weight:600;color:#fff;margin:0 0 6px}
+.tpl-ts .kicker{color:#7ee787;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.04em;margin-bottom:14px}
+.tpl-ts .kicker::before{content:"> "}
+.tpl-ts .lede{color:#8b949e;font-size:20px;line-height:1.6;font-weight:300}
+.tpl-ts .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
+.tpl-ts .dim{color:#8b949e}
+.tpl-ts .card{background:#161b22;border:1px solid rgba(139,148,158,.22);border-radius:14px;padding:22px 24px}
+.tpl-ts .card-accent{border-top:3px solid #7ee787}
+.tpl-ts .card-blue{border-top:3px solid #79c0ff}
+.tpl-ts .card-red{border-top:3px solid #ff7b72}
+.tpl-ts .card-purple{border-top:3px solid #d2a8ff}
+.tpl-ts .tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;background:#1c2230;border:1px solid rgba(139,148,158,.22);color:#8b949e}
+.tpl-ts .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(126,231,135,.12);color:#7ee787;border:1px solid rgba(126,231,135,.3)}
+.tpl-ts .badge-blue{background:rgba(121,192,255,.12);color:#79c0ff;border-color:rgba(121,192,255,.3)}
+.tpl-ts .badge-red{background:rgba(255,123,114,.12);color:#ff7b72;border-color:rgba(255,123,114,.3)}
+.tpl-ts .badge-purple{background:rgba(210,168,255,.12);color:#d2a8ff;border-color:rgba(210,168,255,.3)}
+.tpl-ts .step-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(126,231,135,.12);border:1px solid rgba(126,231,135,.3);color:#7ee787;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.tpl-ts .step-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(139,148,158,.12);font-size:15px;line-height:1.5}
+.tpl-ts .step-row:last-child{border-bottom:none}
+.tpl-ts .step-text{color:#e6edf3;flex:1}
+.tpl-ts .trouble-box{border:1px solid rgba(255,123,114,.3);border-left:4px solid #ff7b72;padding:14px 18px;border-radius:0 10px 10px 0;background:rgba(255,123,114,.05)}
+.tpl-ts .solution-box{border:1px solid rgba(126,231,135,.3);border-left:4px solid #7ee787;padding:14px 18px;border-radius:0 10px 10px 0;background:rgba(126,231,135,.05)}
+.tpl-ts .choice-box{border:1px solid rgba(121,192,255,.3);border-left:4px solid #79c0ff;padding:14px 18px;border-radius:0 10px 10px 0;background:rgba(121,192,255,.05)}
+.tpl-ts .section-cover{background:linear-gradient(135deg,#0d1117 0%,#1c2230 100%)!important;justify-content:center;align-items:center;text-align:center}
+.tpl-ts .section-cover .sec-num{font-size:140px;font-weight:900;font-family:'JetBrains Mono',monospace;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:.15;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);line-height:1}
+.tpl-ts .arch-box{background:#161b22;border:1px solid rgba(139,148,158,.3);border-radius:10px;padding:10px 16px;text-align:center;font-size:13px;font-weight:600;color:#e6edf3;position:relative}
+.tpl-ts .arch-arrow{color:#8b949e;font-size:18px;display:flex;align-items:center;justify-content:center}
+.tpl-ts .list-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(139,148,158,.1);font-size:15px;line-height:1.5;color:#e6edf3}
+.tpl-ts .list-item:last-child{border-bottom:none}
+.tpl-ts .list-icon{color:#7ee787;font-size:14px;margin-top:2px;flex-shrink:0}
+.tpl-ts .interface-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(139,148,158,.1);font-size:14px}
+.tpl-ts .interface-row:last-child{border-bottom:none}
+.tpl-ts .iface-name{font-family:'JetBrains Mono',monospace;color:#79c0ff;font-size:13px;flex:0 0 auto;min-width:280px}
+.tpl-ts .iface-desc{color:#8b949e}
+.tpl-ts .compare-row{display:grid;grid-template-columns:1fr 3fr;gap:16px;padding:10px 0;border-bottom:1px solid rgba(139,148,158,.1);align-items:center}
+.tpl-ts .compare-row:last-child{border-bottom:none}
+.tpl-ts .compare-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:#7ee787}
+.tpl-ts .gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tpl-ts .flow-connector{display:flex;flex-direction:column;align-items:center;gap:4px}
+.tpl-ts .flow-line{width:2px;height:20px;background:rgba(139,148,158,.3)}
+.tpl-ts .flow-arrow{color:#8b949e;font-size:14px;margin-top:-4px}
+/* deck footer */
+.tpl-ts .deck-footer{position:absolute;bottom:28px;left:88px;right:88px;display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e7681;z-index:10}
+/* progress bar */
+.progress-bar{position:absolute;bottom:0;left:0;height:2px;background:var(--grad);transition:width .4s}
+</style>
+</head>
+<body class="tpl-ts">
+<div class="deck">
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 01 · 표지
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Cover">
+  <p class="kicker">ROKEY Bootcamp · 2026</p>
+  <h1 class="h1 anim-fade-up" style="font-size:54px;max-width:900px;line-height:1.15">
+    이미지 기반<br>
+    <span class="gradient-text">레고 블록 자동 조립 시스템</span>
+  </h1>
+  <p class="lede mt-m" style="max-width:700px">ROS2 · Doosan M0609 · RG2 Gripper · OpenCV · Flask / Qt UI</p>
+  <div style="display:flex;gap:24px;margin-top:32px;flex-wrap:wrap">
+    <div class="card" style="padding:14px 20px">
+      <div style="font-size:11px;color:#6e7681;font-family:'JetBrains Mono',monospace;margin-bottom:4px">한 줄 소개</div>
+      <div style="font-size:15px;color:#e6edf3;line-height:1.5">사용자가 업로드한 이미지를 레고 설계도로 변환하고,<br>로봇이 실제 블록을 조립·검증·회수하는 자동화 시스템</div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>01 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 02 · 프로젝트 한 줄 요약
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Summary">
+  <p class="kicker">project · overview</p>
+  <h2 class="h2">프로젝트 한 줄 요약</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:20px;padding:16px 20px;background:#161b22;border-radius:12px;border:1px solid rgba(139,148,158,.2)">
+      <span style="font-size:28px">📥</span>
+      <div><div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:4px">INPUT</div><div style="color:#e6edf3;font-size:16px">사용자가 업로드한 이미지</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;padding:16px 20px;background:#161b22;border-radius:12px;border:1px solid rgba(139,148,158,.2)">
+      <span style="font-size:28px">⚙️</span>
+      <div><div style="font-size:12px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:4px">PROCESS</div><div style="color:#e6edf3;font-size:16px">색상 격자화 → 블록 단위 분할 → 조립 순서 생성</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;padding:16px 20px;background:#161b22;border-radius:12px;border:1px solid rgba(139,148,158,.2)">
+      <span style="font-size:28px">🤖</span>
+      <div><div style="font-size:12px;color:#d2a8ff;font-family:'JetBrains Mono',monospace;margin-bottom:4px">EXECUTE</div><div style="color:#e6edf3;font-size:16px">로봇 Pick &amp; Place</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;padding:16px 20px;background:#161b22;border-radius:12px;border:1px solid rgba(139,148,158,.2)">
+      <span style="font-size:28px">✅</span>
+      <div><div style="font-size:12px;color:#ff7b72;font-family:'JetBrains Mono',monospace;margin-bottom:4px">VERIFY</div><div style="color:#e6edf3;font-size:16px">웹캠 · 전면 카메라 · 외력 감지</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;padding:16px 20px;background:#161b22;border-radius:12px;border:1px solid rgba(139,148,158,.2)">
+      <span style="font-size:28px">🖥️</span>
+      <div><div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:4px">CONTROL</div><div style="color:#e6edf3;font-size:16px">UI에서 진행률·오류·재개 제어 가능</div></div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>02 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 03 · 프로젝트 배경
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Background">
+  <p class="kicker">background · motivation</p>
+  <h2 class="h2">프로젝트 배경</h2>
+  <div class="grid g2 mt-l" style="gap:18px">
+    <div class="card card-accent">
+      <h4 class="h4">수작업 반복 작업</h4>
+      <p class="dim" style="font-size:14px;line-height:1.6">레고 조립은 반복 작업과 높은 위치 정밀도가 요구됨. 수동으로는 효율적으로 처리하기 어려운 대량 조립.</p>
+    </div>
+    <div class="card card-blue">
+      <h4 class="h4">단순 Pick &amp; Place의 한계</h4>
+      <p class="dim" style="font-size:14px;line-height:1.6">이미지 설계 → 블록 분할 → 체결 검증까지의 전 과정을 자동화하기 어려움.</p>
+    </div>
+    <div class="card card-red">
+      <h4 class="h4">실환경 문제</h4>
+      <p class="dim" style="font-size:14px;line-height:1.6">조명, 카메라 왜곡, 블록 누락, 체결 실패, 외력 충돌 등 실제 환경에서 다양한 문제 발생.</p>
+    </div>
+    <div class="card card-purple">
+      <h4 class="h4">통합 폐루프 시스템 필요</h4>
+      <p class="dim" style="font-size:14px;line-height:1.6"><strong style="color:#d2a8ff">"비전 → 계획 → 로봇 → 검증 → UI"</strong>를 하나의 폐루프 시스템으로 통합.</p>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>03 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 04 · 프로젝트 목표
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Goals">
+  <p class="kicker">project · goals</p>
+  <h2 class="h2">프로젝트 목표</h2>
+  <div class="mt-l" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="step-row"><span class="step-num">01</span><span class="step-text">이미지를 레고 색상 격자로 변환</span></div>
+    <div class="step-row"><span class="step-num">02</span><span class="step-text">색상 격자를 실제 2칸/3칸 블록 조립 계획으로 변환</span></div>
+    <div class="step-row"><span class="step-num">03</span><span class="step-text">Doosan M0609 + RG2 그리퍼로 자동 조립</span></div>
+    <div class="step-row"><span class="step-num">04</span><span class="step-text">블록 집기 전 웹캠으로 누락 방지</span></div>
+    <div class="step-row"><span class="step-num">05</span><span class="step-text">조립 후 전면 카메라로 배치 검증</span></div>
+    <div class="step-row"><span class="step-num">06</span><span class="step-text">외력 감지 시 pause 처리</span></div>
+    <div class="step-row" style="grid-column:1/-1"><span class="step-num">07</span><span class="step-text">웹/Qt UI에서 수정, 실행, 모니터링 제공</span></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>04 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 05 · 최종 결과물
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Deliverables">
+  <p class="kicker">deliverables · outcomes</p>
+  <h2 class="h2">최종 결과물</h2>
+  <div class="grid g3 mt-l" style="gap:12px">
+    <div class="card" style="padding:16px 18px"><div style="color:#7ee787;font-size:20px;margin-bottom:8px">🖼️</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">이미지 업로드 UI</div><div style="font-size:12px;color:#8b949e">ROI 선택 포함</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#79c0ff;font-size:20px;margin-bottom:8px">🎨</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">색상 격자 편집 UI</div><div style="font-size:12px;color:#8b949e">직접 수정 가능</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#d2a8ff;font-size:20px;margin-bottom:8px">🧩</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">블록 분할 미리보기</div><div style="font-size:12px;color:#8b949e">분할 계획 시각화</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#7ee787;font-size:20px;margin-bottom:8px">🔗</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">ROS2 조립 파이프라인</div><div style="font-size:12px;color:#8b949e">end-to-end 실행</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#ff7b72;font-size:20px;margin-bottom:8px">🤖</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">로봇 Pick &amp; Place</div><div style="font-size:12px;color:#8b949e">Force + Spiral 체결</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#79c0ff;font-size:20px;margin-bottom:8px">📷</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">웹캠 블록 검사</div><div style="font-size:12px;color:#8b949e">집기 전 누락 확인</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#d2a8ff;font-size:20px;margin-bottom:8px">🔍</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">전면 카메라 검증</div><div style="font-size:12px;color:#8b949e">조립 결과 확인</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#ff7b72;font-size:20px;margin-bottom:8px">⚠️</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">외력 감지 + 일시정지</div><div style="font-size:12px;color:#8b949e">안전 처리</div></div>
+    <div class="card" style="padding:16px 18px"><div style="color:#7ee787;font-size:20px;margin-bottom:8px">♻️</div><div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px">자동 해제 &amp; 폐기</div><div style="font-size:12px;color:#8b949e">반복 데모 지원</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>05 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 06 · 시스템 아키텍처
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Architecture">
+  <p class="kicker">system · architecture</p>
+  <h2 class="h2" style="font-size:38px">전체 시스템 아키텍처</h2>
+  <div class="mt-m" style="display:flex;flex-direction:column;gap:10px">
+    <!-- UI Layer -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="arch-box" style="border-color:rgba(121,192,255,.4);border-top:2px solid #79c0ff">
+        <div style="font-size:10px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:4px">USER INTERFACE</div>
+        <div style="font-size:13px;font-weight:700">Flask Web UI &nbsp;/&nbsp; Qt Desktop UI</div>
+      </div>
+      <div class="arch-box" style="border-color:rgba(210,168,255,.4);border-top:2px solid #d2a8ff">
+        <div style="font-size:10px;color:#d2a8ff;font-family:'JetBrains Mono',monospace;margin-bottom:4px">BRIDGE</div>
+        <div style="font-size:13px;font-weight:700">BridgeNode — UI ↔ ROS2 변환</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-around;color:#8b949e;font-size:18px">↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓</div>
+    <!-- Core Nodes -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div class="arch-box" style="border-color:rgba(126,231,135,.3);border-top:2px solid #7ee787">
+        <div style="font-size:10px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:3px">VISION</div>
+        <div style="font-size:12px;font-weight:700">ImageProcessorNode</div>
+        <div style="font-size:11px;color:#8b949e">이미지 → 색상 격자</div>
+      </div>
+      <div class="arch-box" style="border-color:rgba(126,231,135,.3);border-top:2px solid #7ee787">
+        <div style="font-size:10px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:3px">PLANNING</div>
+        <div style="font-size:12px;font-weight:700">SequencerNode</div>
+        <div style="font-size:11px;color:#8b949e">격자 → BlockTask[]</div>
+      </div>
+      <div class="arch-box" style="border-color:rgba(126,231,135,.3);border-top:2px solid #7ee787">
+        <div style="font-size:10px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:3px">EXECUTION</div>
+        <div style="font-size:12px;font-weight:700">RobotControllerNode</div>
+        <div style="font-size:11px;color:#8b949e">Pick &amp; Place</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div class="arch-box" style="border-color:rgba(121,192,255,.3);border-top:2px solid #79c0ff">
+        <div style="font-size:10px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:3px">WEBCAM</div>
+        <div style="font-size:12px;font-weight:700">WebcamCheckerNode</div>
+        <div style="font-size:11px;color:#8b949e">Pick 전 블록 확인</div>
+      </div>
+      <div class="arch-box" style="border-color:rgba(121,192,255,.3);border-top:2px solid #79c0ff">
+        <div style="font-size:10px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:3px">VERIFY</div>
+        <div style="font-size:12px;font-weight:700">VerifyNode</div>
+        <div style="font-size:11px;color:#8b949e">조립 결과 검증</div>
+      </div>
+      <div class="arch-box" style="border-color:rgba(121,192,255,.3);border-top:2px solid #79c0ff">
+        <div style="font-size:10px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:3px">CAMERA</div>
+        <div style="font-size:12px;font-weight:700">CameraNode</div>
+        <div style="font-size:11px;color:#8b949e">/front_camera/image_raw</div>
+      </div>
+      <div class="arch-box" style="border-color:rgba(255,123,114,.3);border-top:2px solid #ff7b72">
+        <div style="font-size:10px;color:#ff7b72;font-family:'JetBrains Mono',monospace;margin-bottom:3px">SAFETY</div>
+        <div style="font-size:12px;font-weight:700">ForceMonitorNode</div>
+        <div style="font-size:11px;color:#8b949e">외력 감지 100Hz</div>
+      </div>
+    </div>
+    <!-- Hardware -->
+    <div class="arch-box" style="border-color:rgba(210,168,255,.3);border-top:2px solid #d2a8ff;text-align:center">
+      <div style="font-size:10px;color:#d2a8ff;font-family:'JetBrains Mono',monospace;margin-bottom:4px">HARDWARE</div>
+      <div style="font-size:13px;font-weight:700">Doosan M0609 &nbsp;·&nbsp; OnRobot RG2 &nbsp;·&nbsp; 웹캠 &nbsp;·&nbsp; 전면 카메라</div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>06 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 07 · 기술 스택
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Tech Stack">
+  <p class="kicker">technology · stack</p>
+  <h2 class="h2">기술 스택</h2>
+  <div class="grid g3 mt-l" style="gap:12px">
+    <div class="card card-accent" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:14px;color:#7ee787">Language</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+        <span class="tag">Python</span><span class="tag">JavaScript</span><span class="tag">HTML/CSS</span>
+      </div>
+    </div>
+    <div class="card card-blue" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:14px;color:#79c0ff">Robot / Middleware</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+        <span class="tag">ROS2 Humble</span><span class="tag">Doosan M0609</span><span class="tag">DSR SDK</span><span class="tag">DRFL</span><span class="tag">OnRobot RG2</span>
+      </div>
+    </div>
+    <div class="card card-purple" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:14px;color:#d2a8ff">Vision</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+        <span class="tag">OpenCV</span><span class="tag">NumPy</span><span class="tag">cv_bridge</span>
+      </div>
+    </div>
+    <div class="card card-red" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:14px;color:#ff7b72">UI</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+        <span class="tag">Flask</span><span class="tag">Flask-SocketIO</span><span class="tag">PySide6 Qt</span>
+      </div>
+    </div>
+    <div class="card card-accent" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:14px;color:#7ee787">Build / Interface</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+        <span class="tag">colcon</span><span class="tag">ament_python</span><span class="tag">ROS2 msg/srv/action</span>
+      </div>
+    </div>
+    <div class="card card-blue" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:14px;color:#79c0ff">Data / Debug</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+        <span class="tag">debug image 저장</span><span class="tag">ROS topic overlay</span>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>07 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 08 · 팀 내 역할
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Team Roles">
+  <p class="kicker">team · roles</p>
+  <h2 class="h2">팀 내 역할</h2>
+  <div class="mt-l" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="card" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:22px">👁️</span>
+      <div><div style="font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:4px">비전 담당</div><div style="font-size:12px;color:#8b949e;line-height:1.5">이미지 분석, 색상 격자화, ROI, 검증 overlay</div></div>
+    </div>
+    <div class="card" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:22px">🤖</span>
+      <div><div style="font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:4px">로봇 제어 담당</div><div style="font-size:12px;color:#8b949e;line-height:1.5">Pick &amp; Place, Force 제어, Spiral 체결, 트레이 좌표 튜닝</div></div>
+    </div>
+    <div class="card" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:22px">🔢</span>
+      <div><div style="font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:4px">시퀀싱 담당</div><div style="font-size:12px;color:#8b949e;line-height:1.5">Beam Search 기반 블록 분할, 작업 순서 생성</div></div>
+    </div>
+    <div class="card" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:22px">🌐</span>
+      <div><div style="font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:4px">UI/Bridge 담당</div><div style="font-size:12px;color:#8b949e;line-height:1.5">Flask/Qt UI, SocketIO, ROS2 연동</div></div>
+    </div>
+    <div class="card" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:22px">🛡️</span>
+      <div><div style="font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:4px">안전/검증 담당</div><div style="font-size:12px;color:#8b949e;line-height:1.5">웹캠 검사, 외력 감지, pause/resume, 오류 처리</div></div>
+    </div>
+    <div class="card" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:22px">🔧</span>
+      <div><div style="font-size:13px;font-weight:700;color:#e6edf3;margin-bottom:4px">통합 담당</div><div style="font-size:12px;color:#8b949e;line-height:1.5">패키지 구조, launch, 인터페이스 통합, 발표 자료</div></div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>08 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 09 · 본인 역할
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="My Role">
+  <p class="kicker">my · role</p>
+  <h2 class="h2">본인 역할 정리</h2>
+  <div class="mt-l" style="max-width:700px">
+    <div class="step-row"><span class="step-num">01</span><span class="step-text">ROS2 패키지 통합 및 인터페이스 정리</span></div>
+    <div class="step-row"><span class="step-num">02</span><span class="step-text">이미지 분석 결과와 로봇 실행 파이프라인 연결</span></div>
+    <div class="step-row"><span class="step-num">03</span><span class="step-text">Sequencer / RobotController / Bridge 연동</span></div>
+    <div class="step-row"><span class="step-num">04</span><span class="step-text">웹캠 검사 및 pause/retry 구조 설계</span></div>
+    <div class="step-row"><span class="step-num">05</span><span class="step-text">발표 자료 및 트러블슈팅 문서화</span></div>
+    <div class="step-row"><span class="step-num">06</span><span class="step-text">실제 로봇 테스트 과정에서 좌표·파라미터 튜닝</span></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>09 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 10 · 주요 ROS2 인터페이스
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="ROS2 Interfaces">
+  <p class="kicker">ros2 · interfaces</p>
+  <h2 class="h2">주요 ROS2 인터페이스</h2>
+  <div class="mt-l">
+    <div class="interface-row"><span class="iface-name">/image/analyze</span><span class="iface-desc">이미지 분석 서비스</span><span class="badge" style="margin-left:auto">srv</span></div>
+    <div class="interface-row"><span class="iface-name">/sequence/plan</span><span class="iface-desc">블록 배치 계획 서비스</span><span class="badge" style="margin-left:auto">srv</span></div>
+    <div class="interface-row"><span class="iface-name">/execute_queue</span><span class="iface-desc">로봇 실행 액션</span><span class="badge badge-blue" style="margin-left:auto">action</span></div>
+    <div class="interface-row"><span class="iface-name">/vision/expected_model</span><span class="iface-desc">기준 모델 공유 토픽</span><span class="badge badge-purple" style="margin-left:auto">topic</span></div>
+    <div class="interface-row"><span class="iface-name">/front_camera/image_raw</span><span class="iface-desc">전면 카메라 이미지</span><span class="badge badge-purple" style="margin-left:auto">topic</span></div>
+    <div class="interface-row"><span class="iface-name">/webcam/check_block</span><span class="iface-desc">픽업 전 블록 검사 서비스</span><span class="badge" style="margin-left:auto">srv</span></div>
+    <div class="interface-row"><span class="iface-name">/robot/pause</span><span class="iface-desc">로봇 일시정지/재개 서비스</span><span class="badge" style="margin-left:auto">srv</span></div>
+    <div class="interface-row"><span class="iface-name">/robot/force_detected</span><span class="iface-desc">외력 감지 토픽</span><span class="badge badge-red" style="margin-left:auto">topic</span></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>10 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 11 · 전체 동작 시나리오
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Scenario">
+  <p class="kicker">workflow · scenario</p>
+  <h2 class="h2">전체 동작 시나리오</h2>
+  <div class="mt-m" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="step-row"><span class="step-num">01</span><span class="step-text">사용자가 이미지 업로드</span></div>
+    <div class="step-row"><span class="step-num">02</span><span class="step-text">필요 시 ROI 선택</span></div>
+    <div class="step-row"><span class="step-num">03</span><span class="step-text">ImageProcessorNode가 색상 격자 생성</span></div>
+    <div class="step-row"><span class="step-num">04</span><span class="step-text">사용자가 색상 격자 수정</span></div>
+    <div class="step-row"><span class="step-num">05</span><span class="step-text">SequencerNode가 블록 단위로 분할</span></div>
+    <div class="step-row"><span class="step-num">06</span><span class="step-text">BridgeNode → RobotControllerNode action goal</span></div>
+    <div class="step-row"><span class="step-num">07</span><span class="step-text">로봇이 블록을 집고 배치</span></div>
+    <div class="step-row"><span class="step-num">08</span><span class="step-text">웹캠이 집기 전 블록 존재 확인</span></div>
+    <div class="step-row"><span class="step-num">09</span><span class="step-text">전면 카메라가 배치 결과 검증</span></div>
+    <div class="step-row"><span class="step-num">10</span><span class="step-text">외력 감지 시 pause</span></div>
+    <div class="step-row" style="grid-column:1/-1"><span class="step-num">11</span><span class="step-text">조립 완료 후 역순 해체 및 폐기</span></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>11 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 12 · 이미지 분석 기능
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Image Analysis">
+  <p class="kicker">vision · image-analysis</p>
+  <h2 class="h2">이미지 분석 기능</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div>
+      <div class="card card-accent" style="margin-bottom:12px">
+        <h4 class="h4" style="font-size:14px;color:#7ee787">입력 처리</h4>
+        <p class="dim" style="font-size:13px;line-height:1.6;margin:0">입력 이미지를 OpenCV BGR 이미지로 변환. 사용자가 지정한 행/열 크기 적용.</p>
+      </div>
+      <div class="card card-blue">
+        <h4 class="h4" style="font-size:14px;color:#79c0ff">기본 격자 설정</h4>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <span class="tag">기본값: 8행 × 16열</span>
+          <span class="tag">cell width: 15.9 mm</span>
+          <span class="tag">cell height: 19.0 mm</span>
+        </div>
+        <p class="dim" style="font-size:13px;line-height:1.6;margin:8px 0 0">실제 블록 비율 반영</p>
+      </div>
+    </div>
+    <div class="card card-purple">
+      <h4 class="h4" style="font-size:14px;color:#d2a8ff">출력 결과</h4>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+        <div class="list-item"><span class="list-icon">▸</span><span><strong style="color:#e6edf3">fitted image</strong> — 비율 맞춘 이미지 <span class="badge badge-purple" style="font-size:10px">topic</span></span></div>
+        <div class="list-item"><span class="list-icon">▸</span><span><strong style="color:#e6edf3">overlay image</strong> — 격자 오버레이 <span class="badge badge-purple" style="font-size:10px">topic</span></span></div>
+        <div class="list-item"><span class="list-icon">▸</span><span><strong style="color:#e6edf3">mosaic image</strong> — 색상별 블록 시각화 <span class="badge badge-purple" style="font-size:10px">topic</span></span></div>
+        <div class="list-item"><span class="list-icon">▸</span><span><strong style="color:#e6edf3">colors 배열</strong> — 격자 색상 데이터 <span class="badge" style="font-size:10px">response</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>12 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 13 · 이미지 분석 문제점
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Image Problems">
+  <p class="kicker">vision · problems</p>
+  <h2 class="h2">이미지 분석에서 예상된 문제</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:10px">
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">업로드 이미지마다 비율이 다름</span><span style="color:#8b949e;font-size:13px;margin-left:12px">→ 정규화·크롭 방식이 필요</span></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">배경과 블록 색상이 섞임</span><span style="color:#8b949e;font-size:13px;margin-left:12px">→ 색상 분리가 어려움</span></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">조명과 그림자 영향</span><span style="color:#8b949e;font-size:13px;margin-left:12px">→ 동일 색상도 다르게 인식</span></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">빈 칸이 색상으로 오인</span><span style="color:#8b949e;font-size:13px;margin-left:12px">→ 잘못된 블록 후보 생성</span></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">한 칸짜리 노이즈</span><span style="color:#8b949e;font-size:13px;margin-left:12px">→ 집을 수 없는 블록 후보 남음</span></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">단순 RGB 평균값으로는 색상 분류 불안정</span><span style="color:#8b949e;font-size:13px;margin-left:12px">→ 더 강건한 방법 필요</span></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>13 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 14 · 이미지 분석 해결 방식
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Image Solutions">
+  <p class="kicker">vision · solutions</p>
+  <h2 class="h2">이미지 분석 해결 방식</h2>
+  <div class="grid g2 mt-l" style="gap:14px">
+    <div class="solution-box">
+      <div style="color:#7ee787;font-weight:600;margin-bottom:8px">📐 fit_image 모드</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag">center crop</span><span class="tag">smart crop</span><span class="tag">none 모드</span>
+      </div>
+    </div>
+    <div class="solution-box">
+      <div style="color:#7ee787;font-weight:600;margin-bottom:8px">🎨 색상 마스킹</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag">HSV 색상 마스크</span><span class="tag">LAB 색공간 거리</span>
+      </div>
+    </div>
+    <div class="solution-box">
+      <div style="color:#7ee787;font-weight:600;margin-bottom:8px">🔬 노이즈 제거</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag">morphology open/close</span><span class="tag">connected component 면적</span>
+      </div>
+    </div>
+    <div class="solution-box">
+      <div style="color:#7ee787;font-weight:600;margin-bottom:8px">✂️ 후처리</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag">작은 hole 채우기</span><span class="tag">island 제거</span><span class="tag">single-cell run 제거</span>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>14 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 15 · 왜 전통 비전 방식
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Why Traditional Vision">
+  <p class="kicker">design · decision</p>
+  <h2 class="h2">왜 전통 비전 방식을 선택했는가</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:12px;max-width:750px">
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">딥러닝 모델 학습 비용</span><div style="color:#8b949e;font-size:13px;margin-top:4px">데이터 수집·라벨링·학습 시간이 짧은 프로젝트 기간에 맞지 않음</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">제한된 색상 도메인</span><div style="color:#8b949e;font-size:13px;margin-top:4px">red, blue, green, yellow로만 구성 → 규칙 기반으로 충분</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">명시적 파라미터 — 현장 튜닝 용이</span><div style="color:#8b949e;font-size:13px;margin-top:4px">threshold 값을 직접 조정해 즉각 반영 가능</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">디버그 이미지로 실패 원인 파악 가능</span><div style="color:#8b949e;font-size:13px;margin-top:4px">overlay / raw / result 이미지로 어디서 실패했는지 즉시 확인</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">데모 재현성과 설명력</span><div style="color:#8b949e;font-size:13px;margin-top:4px">발표 자리에서 동작 원리를 명확하게 설명 가능</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>15 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 16 · 색상 격자 후처리
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Grid Post-processing">
+  <p class="kicker">vision · post-processing</p>
+  <h2 class="h2">색상 격자 후처리</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:10px;max-width:780px">
+    <div class="step-row"><span class="step-num">1</span><span class="step-text"><strong>짧은 horizontal gap 보정</strong> — 끊긴 색상 구간을 연결</span></div>
+    <div class="step-row"><span class="step-num">2</span><span class="step-text"><strong>작은 background hole 채우기</strong> — 배경 안에 섞인 잡음 제거</span></div>
+    <div class="step-row"><span class="step-num">3</span><span class="step-text"><strong>작은 색상 island 제거</strong> — 고립된 작은 색상 영역 삭제</span></div>
+    <div class="step-row"><span class="step-num">4</span><span class="step-text"><strong>한 칸짜리 run 제거</strong> — 실제 블록은 최소 2칸 이상이므로 적극 제거</span></div>
+  </div>
+  <div class="card card-accent mt-l" style="max-width:700px;padding:16px 20px">
+    <div style="color:#7ee787;font-size:13px;font-weight:600;margin-bottom:6px">결과</div>
+    <p class="dim" style="font-size:14px;margin:0;line-height:1.6">로봇이 집을 수 없는 잘못된 블록 후보를 사전에 제거해, 이후 시퀀싱·조립 단계의 안정성을 높임.</p>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>16 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 17 · 사용자 수정 UI
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Edit UI">
+  <p class="kicker">ui · grid-editor</p>
+  <h2 class="h2">사용자 수정 UI</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">이미지 분석 결과를 사용자가 직접 확인</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text">색상 팔레트에서 색상 선택</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">격자 클릭/드래그로 칸 수정</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">우클릭 또는 erase로 빈 칸 처리</span></div>
+      <div class="step-row"><span class="step-num">5</span><span class="step-text">수정 후 다시 sequence plan 요청</span></div>
+      <div class="step-row"><span class="step-num">6</span><span class="step-text">블록 분할 preview 제공</span></div>
+    </div>
+    <div class="card card-accent" style="display:flex;flex-direction:column;gap:8px">
+      <h4 class="h4" style="color:#7ee787;font-size:14px">색상 팔레트</h4>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <div style="width:36px;height:36px;border-radius:8px;background:#e74c3c;border:2px solid rgba(255,255,255,.2)"></div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#3498db;border:2px solid rgba(255,255,255,.2)"></div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#2ecc71;border:2px solid rgba(255,255,255,.2)"></div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#f1c40f;border:2px solid rgba(255,255,255,.2)"></div>
+        <div style="width:36px;height:36px;border-radius:8px;background:#0d1117;border:2px dashed rgba(139,148,158,.4)"></div>
+      </div>
+      <div style="font-size:12px;color:#8b949e;margin-top:8px">빨강 / 파랑 / 초록 / 노랑 / 빈칸</div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>17 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 18 · 왜 수정 기능
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Why Edit UI">
+  <p class="kicker">design · decision</p>
+  <h2 class="h2">왜 사용자 수정 기능을 넣었는가</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">비전 정확도 100% 달성이 어려움</span><div style="color:#8b949e;font-size:13px;margin-top:4px">조명·배경·카메라 조건이 매번 달라지기 때문에</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">구현 대비 안정성 향상 효과가 큼</span><div style="color:#8b949e;font-size:13px;margin-top:4px">비전 실패를 UI에서 수작업으로 빠르게 보완</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">데모 실패 방지</span><div style="color:#8b949e;font-size:13px;margin-top:4px">비전 오류가 전체 시스템 실패로 이어지지 않음</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">사용자 최종 확인 권한 제공</span><div style="color:#8b949e;font-size:13px;margin-top:4px">조립 전 설계도를 검토·수정하는 단계 추가</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">"Human-in-the-loop 자동화"</span><div style="color:#8b949e;font-size:13px;margin-top:4px">완전 자동화와 수동 제어의 실용적 균형점</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>18 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 19 · 블록 분할 문제
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Block Split Problem">
+  <p class="kicker">sequencer · problem</p>
+  <h2 class="h2">블록 분할 문제</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div>
+      <p class="lede" style="font-size:16px">이미지 분석 결과는 <strong style="color:#e6edf3">셀 단위 색상 배열</strong>이지만,<br>실제 로봇은 <strong style="color:#e6edf3">2칸 또는 3칸 블록</strong>을 집어야 합니다.</p>
+      <div class="trouble-box mt-m">
+        <div style="color:#ff7b72;font-weight:600;margin-bottom:8px">같은 색상 8칸 연속 → 여러 분할 가능</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-family:'JetBrains Mono',monospace;font-size:14px">
+          <div><span class="tag" style="color:#79c0ff">3</span> + <span class="tag" style="color:#79c0ff">3</span> + <span class="tag" style="color:#79c0ff">2</span></div>
+          <div><span class="tag" style="color:#7ee787">3</span> + <span class="tag" style="color:#7ee787">2</span> + <span class="tag" style="color:#7ee787">3</span></div>
+          <div><span class="tag" style="color:#d2a8ff">2</span> + <span class="tag" style="color:#d2a8ff">3</span> + <span class="tag" style="color:#d2a8ff">3</span></div>
+          <div><span class="tag" style="color:#ff7b72">2</span> + <span class="tag" style="color:#ff7b72">2</span> + <span class="tag" style="color:#ff7b72">2</span> + <span class="tag" style="color:#ff7b72">2</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card card-red" style="padding:20px 22px">
+      <h4 class="h4" style="color:#ff7b72;font-size:14px">왜 분할이 중요한가</h4>
+      <div class="list-item" style="margin-top:12px"><span class="list-icon" style="color:#ff7b72">!</span><span>잘못 분할하면 구조 안정성 하락</span></div>
+      <div class="list-item"><span class="list-icon" style="color:#ff7b72">!</span><span>위층 블록 경계가 아래층 경계와 겹치면 불안정</span></div>
+      <div class="list-item"><span class="list-icon" style="color:#ff7b72">!</span><span>Greedy 방식은 구조를 고려하지 못함</span></div>
+      <div class="list-item"><span class="list-icon" style="color:#7ee787">✓</span><span>→ 최적 분할 알고리즘 필요</span></div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>19 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 20 · SequencerNode 역할
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="SequencerNode">
+  <p class="kicker">sequencer · node</p>
+  <h2 class="h2">SequencerNode 역할</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">색상 배열을 2D grid로 변환</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text">행 단위 같은 색상 run 추출</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">길이 2·3의 조합으로 분할 후보 생성</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">Beam Search DP로 구조적으로 안정적인 후보 선택</span></div>
+      <div class="step-row"><span class="step-num">5</span><span class="step-text">아래층부터 위층으로 조립 순서 생성</span></div>
+      <div class="step-row"><span class="step-num">6</span><span class="step-text">각 블록을 BlockTask로 변환</span></div>
+    </div>
+    <div>
+      <div class="card card-blue" style="padding:16px 18px;margin-bottom:12px">
+        <div style="font-size:12px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:6px">ROS2 Interface</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#e6edf3">/sequence/plan</div>
+        <div style="font-size:12px;color:#8b949e;margin-top:4px">색상 격자 → BlockTask[]</div>
+      </div>
+      <div class="card card-accent" style="padding:16px 18px">
+        <div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:6px">BlockTask 구조</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#e6edf3;line-height:1.8">color: string<br>block_type: uint8  <span style="color:#8b949e"># 1=2칸, 2=3칸</span><br>y_position: float64  <span style="color:#8b949e"># 로봇 Y 좌표(mm)</span><br>layer: uint8  <span style="color:#8b949e"># 조립 층 (0=바닥)</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>20 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 21 · Beam Search DP 설계
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Beam Search DP">
+  <p class="kicker">sequencer · algorithm</p>
+  <h2 class="h2">Beam Search DP 설계</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:10px;max-width:800px">
+    <div class="step-row"><span class="step-num">1</span><span class="step-text">각 run을 2와 3의 순서 있는 조합으로 분할</span></div>
+    <div class="step-row"><span class="step-num">2</span><span class="step-text">아래층부터 후보 생성 — 기초 레이어 먼저 확정</span></div>
+    <div class="step-row"><span class="step-num">3</span><span class="step-text">아래층 내부 경계를 계산</span></div>
+    <div class="step-row"><span class="step-num">4</span><span class="step-text">위층 블록이 아래층 경계를 적절히 걸치는지 평가</span></div>
+    <div class="step-row"><span class="step-num">5</span><span class="step-text">위반 시 loss 부여, 누적 loss가 낮은 후보 유지</span></div>
+    <div class="step-row"><span class="step-num">6</span><span class="step-text">beam width로 후보 수를 제한해 계산량 제어</span></div>
+  </div>
+  <div class="grid g3 mt-l" style="gap:10px">
+    <div class="card" style="padding:12px 14px;text-align:center"><div style="color:#7ee787;font-size:20px;margin-bottom:4px">📐</div><div style="font-size:12px;color:#8b949e">경계 overlap 평가</div></div>
+    <div class="card" style="padding:12px 14px;text-align:center"><div style="color:#79c0ff;font-size:20px;margin-bottom:4px">⚖️</div><div style="font-size:12px;color:#8b949e">누적 loss 최소화</div></div>
+    <div class="card" style="padding:12px 14px;text-align:center"><div style="color:#d2a8ff;font-size:20px;margin-bottom:4px">🎯</div><div style="font-size:12px;color:#8b949e">beam width로 탐색 범위 제어</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>21 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 22 · 왜 Beam Search
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Why Beam Search">
+  <p class="kicker">design · decision</p>
+  <h2 class="h2">왜 Greedy가 아니라 Beam Search인가</h2>
+  <div class="grid g3 mt-l" style="gap:14px">
+    <div class="card card-red" style="padding:18px 20px">
+      <h4 class="h4" style="font-size:14px;color:#ff7b72">❌ Greedy</h4>
+      <p class="dim" style="font-size:13px;line-height:1.6;margin-top:8px">빠르지만 구조 안정성을 전혀 고려하지 못함. 첫 번째 분할만 보고 결정.</p>
+    </div>
+    <div class="card card-accent" style="padding:18px 20px">
+      <h4 class="h4" style="font-size:14px;color:#7ee787">✅ Beam Search</h4>
+      <p class="dim" style="font-size:13px;line-height:1.6;margin-top:8px">후보 수를 제한해 계산량 제어. Greedy보다 좋은 구조 후보 탐색. 속도·품질 균형.</p>
+    </div>
+    <div class="card card-blue" style="padding:18px 20px">
+      <h4 class="h4" style="font-size:14px;color:#79c0ff">⚠️ 완전 탐색</h4>
+      <p class="dim" style="font-size:13px;line-height:1.6;margin-top:8px">가능한 모든 조합을 보지만 실행 시간이 커짐. 실시간 데모에 부적합.</p>
+    </div>
+  </div>
+  <div class="card card-accent mt-l" style="padding:16px 20px;max-width:750px">
+    <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3"><strong style="color:#7ee787">결론:</strong> 실시간성, 구현 난이도, 안정성 사이의 절충안으로 Beam Search DP가 최적.</p>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>22 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 23 · 로봇 좌표 변환
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Coordinate Transform">
+  <p class="kicker">robot · coordinate</p>
+  <h2 class="h2">로봇 좌표 변환</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div>
+      <div class="card card-blue" style="padding:16px 18px;margin-bottom:12px">
+        <h4 class="h4" style="font-size:13px;color:#79c0ff">Y 좌표 변환 (격자 col → 로봇 Y)</h4>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#e6edf3;background:#010409;padding:12px;border-radius:8px;margin-top:8px">y = y_col0 - center_col × cell_pitch<br><span style="color:#8b949e;font-size:12px">center_col = col_start + (width−1) / 2</span></div>
+      </div>
+      <div class="card card-purple" style="padding:16px 18px">
+        <h4 class="h4" style="font-size:13px;color:#d2a8ff">Z 높이 변환 (layer → 배치 Z)</h4>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#e6edf3;background:#010409;padding:12px;border-radius:8px;margin-top:8px">z = base_z + layer × stack_pitch<br><span style="color:#8b949e;font-size:11px">stack_pitch = 19.0 mm + 1.0 mm = 20.0 mm</span></div>
+      </div>
+    </div>
+    <div class="card card-accent" style="padding:18px 20px">
+      <h4 class="h4" style="font-size:14px;color:#7ee787">변환 파라미터</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+        <div class="compare-row">
+          <span class="compare-label">col</span><span class="dim" style="font-size:13px">격자 열 인덱스 → Y 좌표</span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-label">row</span><span class="dim" style="font-size:13px">격자 행 인덱스 → layer</span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-label">layer</span><span class="dim" style="font-size:13px">조립 높이 Z 계산에 사용</span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-label">block_type</span><span class="dim" style="font-size:13px">2칸 / 3칸 블록 구분</span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-label">color</span><span class="dim" style="font-size:13px">키팅 트레이 위치 선택</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>23 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 24 · 로봇 제어 기능 개요
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Robot Control Overview">
+  <p class="kicker">robot · control</p>
+  <h2 class="h2">로봇 제어 기능 개요</h2>
+  <div class="grid g2 mt-l" style="gap:14px">
+    <div class="card card-accent" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:13px;color:#7ee787">하드웨어</h4>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <span class="tag">Doosan M0609</span><span class="tag">OnRobot RG2</span>
+      </div>
+    </div>
+    <div class="card card-blue" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:13px;color:#79c0ff">ROS2 인터페이스</h4>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#e6edf3;margin-top:8px">/execute_queue — 액션 서버<br>BlockTask[] 배열 수신</div>
+    </div>
+    <div class="card card-purple" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:13px;color:#d2a8ff">Pick 단계</h4>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+        <span class="tag">overhead</span><span class="tag">approach</span><span class="tag">pick pose</span><span class="tag">grip</span><span class="tag">retract</span>
+      </div>
+    </div>
+    <div class="card card-red" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:13px;color:#ff7b72">Place 단계</h4>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+        <span class="tag">overhead</span><span class="tag">pre-descend</span><span class="tag">force descend</span><span class="tag">spiral insert</span><span class="tag">release</span>
+      </div>
+    </div>
+  </div>
+  <div class="card mt-m" style="padding:14px 18px;max-width:100%">
+    <div style="font-size:12px;color:#8b949e;line-height:1.6">색상·블록 타입별 <strong style="color:#e6edf3">KittingTrayProfile</strong>로 실제 티칭된 pose 사용 / waypoint로 충돌 위험 감소</div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>24 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 25 · Pick 동작 구현
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Pick Motion">
+  <p class="kicker">robot · pick</p>
+  <h2 class="h2">Pick 동작 구현</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">색상·block type으로 KittingTrayProfile 선택</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text">waypoint 경유 — 먼 트레이 접근 시 충돌 위험 감소</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">overhead 이동과 그리퍼 open 병렬화</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">pick pose 근처에서 저속 정밀 하강</span></div>
+      <div class="step-row"><span class="step-num">5</span><span class="step-text">pick 직전 웹캠 검사 수행</span></div>
+      <div class="step-row"><span class="step-num">6</span><span class="step-text">tool 좌표계 기준 retract 수행</span></div>
+    </div>
+    <div>
+      <div class="solution-box">
+        <div style="color:#7ee787;font-weight:600;margin-bottom:8px">병렬화 최적화</div>
+        <p class="dim" style="font-size:13px;margin:0;line-height:1.6">overhead 이동 중 그리퍼를 열어 대기시간 단축. 실제 로봇 이동 중 준비 작업 동시 수행.</p>
+      </div>
+      <div class="trouble-box mt-m">
+        <div style="color:#ff7b72;font-weight:600;margin-bottom:8px">⚠️ pick 직전 웹캠 검사</div>
+        <p class="dim" style="font-size:13px;margin:0;line-height:1.6">블록 없으면 grip 안 하고 pause. 공집기 방지.</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>25 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 26 · Place 동작 구현
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Place Motion">
+  <p class="kicker">robot · place</p>
+  <h2 class="h2">Place 동작 구현</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">Y 좌표 유효성 검사 (NaN/Inf, 허용 Y 범위)</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text">stack_index 기반 Z 높이 계산</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">고속 pre-descend → 저속 force descend</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">compliance 제어 적용</span></div>
+      <div class="step-row"><span class="step-num">5</span><span class="step-text">spiral motion으로 체결 보조</span></div>
+      <div class="step-row"><span class="step-num">6</span><span class="step-text">release 후 overhead 복귀</span></div>
+    </div>
+    <div>
+      <div class="card card-accent" style="padding:14px 16px;margin-bottom:10px">
+        <div style="font-size:12px;color:#7ee787;margin-bottom:6px">Z 높이 계산</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#e6edf3;background:#010409;padding:10px;border-radius:6px">z = base_z + stack_index × stack_pitch<br><span style="color:#8b949e;font-size:11px">stack_pitch = 19.0 mm + 1.0 mm = 20.0 mm</span></div>
+      </div>
+      <div class="card card-blue" style="padding:14px 16px">
+        <div style="font-size:12px;color:#79c0ff;margin-bottom:6px">유효성 검사 항목</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span class="tag">NaN 방지</span><span class="tag">Inf 방지</span><span class="tag">Y 범위</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>26 / 51</span></div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 27 · 왜 Force + Spiral
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Why Force+Spiral">
+  <p class="kicker">design · decision</p>
+  <h2 class="h2">왜 Force + Spiral 방식을 선택했는가</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">단순 위치 제어만으로는 체결 실패 가능</span><div style="color:#8b949e;font-size:13px;margin-top:4px">레고 체결은 미세한 위치 오차에도 민감함</div></div>
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">Force 제어 → Z 방향 접촉을 부드럽게 처리</span><div style="color:#8b949e;font-size:13px;margin-top:4px">블록에 가해지는 힘을 제한하면서 접촉 가능</div></div>
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">Spiral motion → XY 미세 오차 보정</span><div style="color:#8b949e;font-size:13px;margin-top:4px">나선형 탐색으로 체결 위치를 능동적으로 찾음</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">비전 기반 미세 보정보다 구현 시간 단축</span><div style="color:#8b949e;font-size:13px;margin-top:4px">카메라 캘리브레이션 없이 기계적 접근으로 해결</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">실제 하드웨어 데모 안정성 향상</span><div style="color:#8b949e;font-size:13px;margin-top:4px">반복 실험에서 체결 성공률 유의미하게 개선</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>27 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 28 · 로봇 실행 중 오류 처리
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Error Handling">
+  <p class="kicker">robot · error-handling</p>
+  <h2 class="h2">로봇 실행 중 오류 처리</h2>
+  <div class="grid g2 mt-l" style="gap:14px;align-items:start">
+    <div>
+      <h4 class="h4" style="font-size:14px;color:#ff7b72;margin-bottom:12px">Goal 유효성 검사 (거부 조건)</h4>
+      <div class="trouble-box" style="margin-bottom:8px"><span style="font-size:13px">이미 실행 중이면 새 goal 거부</span></div>
+      <div class="trouble-box" style="margin-bottom:8px"><span style="font-size:13px">task 배열이 비어 있으면 거부</span></div>
+      <div class="trouble-box" style="margin-bottom:8px"><span style="font-size:13px">color가 비어 있으면 거부</span></div>
+      <div class="trouble-box"><span style="font-size:13px">y_position이 NaN/Inf이면 거부</span></div>
+    </div>
+    <div>
+      <h4 class="h4" style="font-size:14px;color:#7ee787;margin-bottom:12px">실패 처리 구조</h4>
+      <div class="solution-box" style="margin-bottom:8px"><span style="font-size:13px">예외 발생 시 <strong style="color:#7ee787">action abort</strong></span></div>
+      <div class="solution-box" style="margin-bottom:8px"><span style="font-size:13px">실패 step + error message 반환</span></div>
+      <div class="solution-box"><span style="font-size:13px"><strong style="color:#7ee787">finally</strong> 블록에서 busy 상태 해제</span></div>
+      <div class="card mt-m" style="padding:12px 14px">
+        <div style="font-size:12px;color:#8b949e;line-height:1.6">busy 상태 해제를 finally로 보장 → 실패 후에도 시스템이 hung 상태가 되지 않음</div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>28 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 29 · 웹캠 블록 검사 기능
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Webcam Check">
+  <p class="kicker">webcam · block-check</p>
+  <h2 class="h2">웹캠 블록 검사 기능</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div>
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">pick pose 도달 후 블록 존재 확인</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text"><span class="mono" style="color:#79c0ff;font-size:12px">/webcam/check_block</span> 서비스 호출</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">실패 시 <span class="mono" style="color:#ff7b72;font-size:12px">/robot/pause</span> 호출</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">사용자가 블록 보충 후 resume → 재시도</span></div>
+    </div>
+    <div>
+      <div class="card card-blue" style="padding:16px 18px;margin-bottom:12px">
+        <h4 class="h4" style="font-size:13px;color:#79c0ff">CheckBlock.srv</h4>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#e6edf3;margin-top:8px;line-height:1.8">
+          <span style="color:#8b949e"># Request</span><br>
+          uint8 block_type  <span style="color:#8b949e"># 1=2x2  2=3x2</span><br>
+          string color<br>
+          ---<br>
+          <span style="color:#8b949e"># Response</span><br>
+          bool passed<br>
+          uint8 detected_circles<br>
+          string message
+        </div>
+      </div>
+      <div class="card card-accent" style="padding:14px 16px">
+        <div style="font-size:12px;color:#7ee787;margin-bottom:6px">목적</div>
+        <p class="dim" style="font-size:13px;margin:0;line-height:1.5">공집기 → 연쇄 실패 방지. abort 대신 pause + 재시도로 데모 운영성 확보.</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>29 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 30 · 웹캠 검사 문제
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Webcam Problems">
+  <p class="kicker">webcam · problems</p>
+  <h2 class="h2">웹캠 검사에서 발생한 문제</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:10px;max-width:780px">
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">블록 없는데 그리퍼 닫으면 공집기 발생</span><div style="color:#8b949e;font-size:13px;margin-top:4px">공집기 후 place 단계 연쇄 실패</div></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">매번 카메라를 열고 닫으면 지연 발생</span><div style="color:#8b949e;font-size:13px;margin-top:4px">pick마다 카메라 초기화 시간이 누적</div></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">ROS action callback 안에서 service future 대기 → deadlock 위험</span><div style="color:#8b949e;font-size:13px;margin-top:4px">같은 executor에서 service response를 기다리면 블로킹</div></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">색상·타입별 ROI와 원 크기가 달라 검출 조건이 다름</span><div style="color:#8b949e;font-size:13px;margin-top:4px">2칸/3칸, 빨강/파랑 블록마다 스터드 개수와 위치가 다름</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>30 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 31 · 웹캠 검사 해결 방식
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Webcam Solutions">
+  <p class="kicker">webcam · solutions</p>
+  <h2 class="h2">웹캠 검사 해결 방식</h2>
+  <div class="grid g2 mt-l" style="gap:14px">
+    <div class="solution-box" style="margin-bottom:4px"><span style="color:#7ee787;font-weight:600">카메라 한 번 열고 background thread 유지</span><div style="color:#8b949e;font-size:13px;margin-top:4px">최신 프레임을 항상 캐시, 요청 시 copy 사용</div></div>
+    <div class="solution-box" style="margin-bottom:4px"><span style="color:#7ee787;font-weight:600">별도 helper node + executor로 deadlock 방지</span><div style="color:#8b949e;font-size:13px;margin-top:4px">threading.Event로 future 완료 대기</div></div>
+    <div class="solution-box" style="margin-bottom:4px"><span style="color:#7ee787;font-weight:600">색상·타입별 4점 ROI 설정</span><div style="color:#8b949e;font-size:13px;margin-top:4px">perspective transform으로 ROI 정면화</div></div>
+    <div class="solution-box" style="margin-bottom:4px"><span style="color:#7ee787;font-weight:600">CLAHE + GaussianBlur + HoughCircles</span><div style="color:#8b949e;font-size:13px;margin-top:4px">대비 개선 후 원 검출. 개수가 허용 범위 안이면 통과.</div></div>
+    <div class="solution-box" style="margin-bottom:4px"><span style="color:#7ee787;font-weight:600">debug 이미지 저장</span><div style="color:#8b949e;font-size:13px;margin-top:4px">raw / warped / result 이미지로 실패 원인 추적</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>31 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 32 · 왜 HoughCircles
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Why HoughCircles">
+  <p class="kicker">design · decision</p>
+  <h2 class="h2">왜 HoughCircles를 선택했는가</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">검사 대상이 레고 스터드 — 원형</span><div style="color:#8b949e;font-size:13px;margin-top:4px">원 검출이 자연스러운 접근. 원 개수 = 블록 개수.</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">딥러닝보다 구현 시간 단축</span><div style="color:#8b949e;font-size:13px;margin-top:4px">학습 데이터 없이 파라미터만 튜닝</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">결과를 원 개수로 직접 설명 가능</span><div style="color:#8b949e;font-size:13px;margin-top:4px">"N개 원 검출 → 블록 있음/없음" 명확한 판단 기준</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">고정 ROI 환경에서 충분히 효과적</span><div style="color:#8b949e;font-size:13px;margin-top:4px">카메라 위치가 고정된 조건에서 재현성 높음</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">debug 이미지로 실패 원인 확인 가능</span><div style="color:#8b949e;font-size:13px;margin-top:4px">어떤 원이 검출됐는지 시각적으로 확인</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>32 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 33 · 전면 카메라 검증 기능
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Front Camera Verify">
+  <p class="kicker">verification · front-camera</p>
+  <h2 class="h2">전면 카메라 검증 기능</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div>
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">조립 후 각 step 결과를 카메라로 확인</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text"><span class="mono" style="color:#79c0ff;font-size:12px">/vision/expected_model</span> 기준 모델 수신</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">action feedback 기반 step 추적</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">전면 카메라 이미지에서 해당 블록 ROI 계산</span></div>
+      <div class="step-row"><span class="step-num">5</span><span class="step-text">색상 일치율, 높이 채움, 하단 채움 계산</span></div>
+      <div class="step-row"><span class="step-num">6</span><span class="step-text">debug overlay 발행</span></div>
+    </div>
+    <div class="card card-blue" style="padding:16px 18px">
+      <h4 class="h4" style="font-size:13px;color:#79c0ff">검증 결과 상태</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+        <div style="display:flex;align-items:center;gap:8px"><span class="badge">PASS</span><span class="dim" style="font-size:12px">정상 체결</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="badge badge-red">FAIL</span><span class="dim" style="font-size:12px">체결 실패</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="badge badge-purple">UNCERTAIN</span><span class="dim" style="font-size:12px">불확실</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="badge badge-blue">CAMERA_ERROR</span><span class="dim" style="font-size:12px">카메라 오류</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="badge badge-blue">ROI_ERROR</span><span class="dim" style="font-size:12px">ROI 계산 실패</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>33 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 34 · 전면 검증 문제
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Front Camera Problems">
+  <p class="kicker">verification · problems</p>
+  <h2 class="h2">전면 검증에서 예상된 문제</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:10px;max-width:780px">
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">카메라가 조립 평면을 비스듬히 봄</span><div style="color:#8b949e;font-size:13px;margin-top:4px">단순 grid 분할 시 실제 위치와 불일치</div></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">조명에 따라 green 색상 인식 불안정</span><div style="color:#8b949e;font-size:13px;margin-top:4px">배경이나 메인보드와 혼동 가능성</div></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">시퀀서와 검증 노드의 분할 기준이 다르면 step 매칭 오류</span><div style="color:#8b949e;font-size:13px;margin-top:4px">같은 블록 계획을 두 곳에서 독립적으로 계산하면 불일치 발생</div></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">블록이 살짝 보이지만 완전히 체결 안 된 경우</span><div style="color:#8b949e;font-size:13px;margin-top:4px">색상만으로는 완전 체결 여부 판단 어려움</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>34 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 35 · 전면 검증 해결 방식
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Front Camera Solutions">
+  <p class="kicker">verification · solutions</p>
+  <h2 class="h2">전면 검증 해결 방식</h2>
+  <div class="grid g2 mt-l" style="gap:14px">
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">네 corner pixel → homography 적용</span><div style="color:#8b949e;font-size:13px;margin-top:4px">비스듬한 카메라 시점을 정면 뷰로 변환</div></div>
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">각 블록 영역을 polygon ROI로 투영</span><div style="color:#8b949e;font-size:13px;margin-top:4px">정확한 블록 위치에 맞는 영역 추출</div></div>
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">LAB 색상 거리 기반 mask</span><div style="color:#8b949e;font-size:13px;margin-top:4px">green 전용 LAB threshold + HSV fallback 추가</div></div>
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">다중 지표 종합 평가</span><div style="color:#8b949e;font-size:13px;margin-top:4px">color fraction + vertical fill + bottom fill + confidence</div></div>
+    <div class="solution-box" style="grid-column:1/-1"><span style="color:#7ee787;font-weight:600">검증 노드 내부에도 Beam Search 분할 사용</span><div style="color:#8b949e;font-size:13px;margin-top:4px">시퀀서와 동일한 로직으로 step 매칭 일관성 확보. vision.yaml에서 corner 좌표·threshold 제어.</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>35 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 36 · 외력 감지 안전 기능
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Force Detection">
+  <p class="kicker">safety · force-monitor</p>
+  <h2 class="h2">외력 감지 안전 기능</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">ForceMonitorNode가 DRFL에 직접 연결</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text">100 Hz로 외력 polling</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">threshold 이상이면 <span class="mono" style="color:#ff7b72;font-size:12px">/robot/force_detected</span> 발행</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">BridgeNode가 이를 받아 <span class="mono" style="color:#ff7b72;font-size:12px">/robot/pause</span> 호출</span></div>
+      <div class="step-row"><span class="step-num">5</span><span class="step-text">UI에 외력 감지 로그 표시</span></div>
+      <div class="step-row"><span class="step-num">6</span><span class="step-text">현재 동작 완료 후 다음 step 진입 차단</span></div>
+    </div>
+    <div>
+      <div class="card card-red" style="padding:16px 18px;margin-bottom:12px">
+        <h4 class="h4" style="font-size:13px;color:#ff7b72">감지 흐름</h4>
+        <div style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2;color:#e6edf3">
+          DRFL @ 100Hz<br>
+          → /robot/force_detected<br>
+          → BridgeNode<br>
+          → /robot/pause<br>
+          → UI 알림 + 동작 중단
+        </div>
+      </div>
+      <div class="card card-accent" style="padding:14px 16px">
+        <div style="font-size:12px;color:#7ee787;margin-bottom:6px">노이즈 방지</div>
+        <p class="dim" style="font-size:12px;margin:0;line-height:1.5">threshold + reset count로 순간 충격에 의한 반복 trigger 방지</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>36 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 37 · 왜 별도 노드로 분리
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Why Separate Node">
+  <p class="kicker">design · decision</p>
+  <h2 class="h2">왜 외력 감지를 별도 노드로 분리했는가</h2>
+  <div class="mt-l" style="display:flex;flex-direction:column;gap:12px;max-width:780px">
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">로봇 이동 함수가 blocking일 수 있음</span><div style="color:#8b949e;font-size:13px;margin-top:4px">movel, movej 등은 완료될 때까지 대기하는 구조</div></div>
+    <div class="trouble-box"><span style="color:#ff7b72;font-weight:600">같은 executor 안에서 감지하면 반응이 늦음</span><div style="color:#8b949e;font-size:13px;margin-top:4px">blocking 함수 실행 중 외력 감지 callback이 실행되지 못함</div></div>
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">별도 thread + 별도 노드로 분리</span><div style="color:#8b949e;font-size:13px;margin-top:4px">실행 흐름과 안전 감지를 완전히 분리. 100Hz polling 보장.</div></div>
+    <div class="solution-box"><span style="color:#7ee787;font-weight:600">threshold + reset count로 노이즈 필터링</span><div style="color:#8b949e;font-size:13px;margin-top:4px">순간 충격과 실제 외력을 구분 가능</div></div>
+    <div class="choice-box"><span style="color:#79c0ff;font-weight:600">안전성과 디버깅 편의성 향상</span><div style="color:#8b949e;font-size:13px;margin-top:4px">외력 감지 로직이 독립적이어서 테스트·튜닝이 용이</div></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>37 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 38 · 자동 결합 해제 및 폐기
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Auto Disassemble">
+  <p class="kicker">robot · disassemble</p>
+  <h2 class="h2">자동 결합 해제 및 폐기</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="step-row"><span class="step-num">1</span><span class="step-text">조립 완료 후 배치한 블록 목록 저장</span></div>
+      <div class="step-row"><span class="step-num">2</span><span class="step-text">역순으로 블록 제거 (위층 → 아래층)</span></div>
+      <div class="step-row"><span class="step-num">3</span><span class="step-text">상층 블록은 필요 시 pre-press</span></div>
+      <div class="step-row"><span class="step-num">4</span><span class="step-text">grip 후 spiral detach 수행</span></div>
+      <div class="step-row"><span class="step-num">5</span><span class="step-text">안전 고도까지 상승</span></div>
+      <div class="step-row"><span class="step-num">6</span><span class="step-text">폐기 바구니로 이동 → release</span></div>
+      <div class="step-row"><span class="step-num">7</span><span class="step-text">복귀 후 반복</span></div>
+    </div>
+    <div>
+      <div class="card card-accent" style="padding:16px 18px;margin-bottom:12px">
+        <h4 class="h4" style="font-size:13px;color:#7ee787">목적</h4>
+        <p class="dim" style="font-size:13px;margin:8px 0 0;line-height:1.6">반복 데모를 위한 자동 reset. 발표 중 수동 해제 없이 연속 시연 가능.</p>
+      </div>
+      <div class="card card-blue" style="padding:16px 18px">
+        <h4 class="h4" style="font-size:13px;color:#79c0ff">placed_blocks 구조</h4>
+        <p class="dim" style="font-size:13px;margin:8px 0 0;line-height:1.6">조립 시 성공한 블록을 리스트에 추가 → 해제 시 reverse로 순서 보장</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>38 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 39 · UI 구조
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="UI Structure">
+  <p class="kicker">ui · structure</p>
+  <h2 class="h2">UI 구조</h2>
+  <div class="grid g3 mt-l" style="gap:14px">
+    <div class="card card-blue" style="padding:18px 20px">
+      <h4 class="h4" style="font-size:14px;color:#79c0ff">🌐 Flask Web UI</h4>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>이미지 업로드</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>ROI 선택</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>격자 편집</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>조립 진행률</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>pause/resume</div>
+      </div>
+    </div>
+    <div class="card card-accent" style="padding:18px 20px">
+      <h4 class="h4" style="font-size:14px;color:#7ee787">🖥️ Qt Desktop UI</h4>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>Flask + SocketIO 서버 접속</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>데스크탑 환경에서 동일한 흐름</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>PySide6 기반</div>
+      </div>
+    </div>
+    <div class="card card-purple" style="padding:18px 20px">
+      <h4 class="h4" style="font-size:14px;color:#d2a8ff">🔗 BridgeNode</h4>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>UI 이벤트 → ROS2 서비스/액션</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>ROS2 결과 → UI 이벤트</div>
+        <div class="list-item" style="font-size:13px"><span class="list-icon">▸</span>SocketIO 중계</div>
+      </div>
+    </div>
+  </div>
+  <div class="card mt-m" style="padding:12px 18px">
+    <p class="dim" style="font-size:13px;margin:0">Flask 앱은 <span class="mono" style="color:#79c0ff">/ (업로드)</span>, <span class="mono" style="color:#79c0ff">/edit (격자 편집)</span>, <span class="mono" style="color:#79c0ff">/progress (실행 모니터링)</span> 세 페이지 제공. SocketIO로 실시간 이벤트 중계.</p>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>39 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 40 · BridgeNode 역할
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="BridgeNode">
+  <p class="kicker">bridge · node</p>
+  <h2 class="h2">BridgeNode 역할</h2>
+  <div class="grid g2 mt-l" style="gap:10px">
+    <div class="step-row"><span class="step-num">1</span><span class="step-text">이미지 업로드 이벤트 수신</span></div>
+    <div class="step-row"><span class="step-num">2</span><span class="step-text"><span class="mono" style="font-size:12px;color:#79c0ff">/image/analyze</span> 서비스 호출</span></div>
+    <div class="step-row"><span class="step-num">3</span><span class="step-text">사용자 수정 색상 반영</span></div>
+    <div class="step-row"><span class="step-num">4</span><span class="step-text"><span class="mono" style="font-size:12px;color:#79c0ff">/sequence/plan</span> 서비스 호출</span></div>
+    <div class="step-row"><span class="step-num">5</span><span class="step-text"><span class="mono" style="font-size:12px;color:#7ee787">/execute_queue</span> action goal 전송</span></div>
+    <div class="step-row"><span class="step-num">6</span><span class="step-text">action feedback → UI progress 변환</span></div>
+    <div class="step-row"><span class="step-num">7</span><span class="step-text">오류 발생 시 UI에 전송</span></div>
+    <div class="step-row"><span class="step-num">8</span><span class="step-text">pause/resume 이벤트 → <span class="mono" style="font-size:12px;color:#ff7b72">/robot/pause</span></span></div>
+  </div>
+  <div class="card card-blue mt-m" style="padding:12px 18px">
+    <p class="dim" style="font-size:13px;margin:0">BridgeNode는 UI와 ROS2 사이의 중계 계층. UI에서 오는 HTTP/SocketIO 이벤트를 ROS2 서비스·액션 호출로 변환하고, 결과를 다시 SocketIO로 브로드캐스트.</p>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>40 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 41 · 데이터 흐름 정리
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Data Flow">
+  <p class="kicker">system · data-flow</p>
+  <h2 class="h2">데이터 흐름 정리</h2>
+  <div class="mt-l" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:center">
+    <!-- Column 1: Browser/Qt -->
+    <div class="card" style="padding:12px 14px;text-align:center;border-color:rgba(121,192,255,.4);border-top:2px solid #79c0ff">
+      <div style="font-size:10px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:6px">BROWSER / Qt</div>
+      <div style="font-size:11px;color:#8b949e;line-height:1.8">image upload<br>grid edit<br>start assembly<br>pause/resume</div>
+    </div>
+    <div style="text-align:center;font-size:20px;color:#8b949e">→</div>
+    <!-- Column 3: Flask/Bridge -->
+    <div class="card" style="padding:12px 14px;text-align:center;border-color:rgba(210,168,255,.4);border-top:2px solid #d2a8ff">
+      <div style="font-size:10px;color:#d2a8ff;font-family:'JetBrains Mono',monospace;margin-bottom:6px">FLASK + BRIDGE</div>
+      <div style="font-size:11px;color:#8b949e;line-height:1.8">SocketIO 중계<br>ROS2 호출 변환</div>
+    </div>
+    <div style="text-align:center;font-size:20px;color:#8b949e">→</div>
+    <!-- Column 5: ROS2 Nodes -->
+    <div class="card" style="padding:12px 14px;text-align:center;border-color:rgba(126,231,135,.4);border-top:2px solid #7ee787">
+      <div style="font-size:10px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:6px">ROS2 NODES</div>
+      <div style="font-size:11px;color:#8b949e;line-height:1.8">image analyze<br>sequence plan<br>robot execution<br>verification</div>
+    </div>
+  </div>
+  <!-- Return flow -->
+  <div class="mt-m" style="display:flex;align-items:center;gap:0;justify-content:center">
+    <div style="width:200px;height:1px;background:rgba(126,231,135,.3);position:relative">
+      <div style="position:absolute;right:0;top:-6px;color:#7ee787;font-size:12px">←</div>
+    </div>
+    <div class="card" style="padding:10px 16px;margin:0 12px;border-color:rgba(126,231,135,.3)">
+      <div style="font-size:11px;color:#8b949e;text-align:center;line-height:1.6">analysis result · block plan<br>progress · done/error log</div>
+    </div>
+    <div style="width:200px;height:1px;background:rgba(126,231,135,.3);position:relative">
+      <div style="position:absolute;left:0;top:-6px;color:#7ee787;font-size:12px">←</div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>41 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 42 · 트러블 1: ROS2 Deadlock
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Trouble 1">
+  <p class="kicker">troubleshooting · 01 / 05</p>
+  <h2 class="h2" style="font-size:38px">주요 트러블 1: ROS2 Deadlock 위험</h2>
+  <div class="grid g2 mt-l" style="gap:16px">
+    <div>
+      <div style="font-size:12px;color:#ff7b72;font-family:'JetBrains Mono',monospace;margin-bottom:8px">PROBLEM</div>
+      <div class="trouble-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">action callback 안에서 service future를 잘못 기다리면 deadlock 가능. 로봇 실행이 완전히 멈춤.</p>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:8px">SOLUTION</div>
+      <div class="solution-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">웹캠 service client를 별도 helper node와 executor로 분리. future 완료는 <span class="mono" style="font-size:12px">threading.Event</span>로 대기.</p>
+      </div>
+      <div class="choice-box mt-m">
+        <div style="color:#79c0ff;font-weight:600;font-size:13px">선택 이유</div>
+        <p style="margin:6px 0 0;font-size:13px;color:#8b949e;line-height:1.5">구조가 복잡해지지만 로봇 실행 callback과 service response 처리를 완전히 분리. 실제 실행 중 멈춤 현상 예방.</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>42 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 43 · 트러블 2: 초록색 인식 불안정
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Trouble 2">
+  <p class="kicker">troubleshooting · 02 / 05</p>
+  <h2 class="h2" style="font-size:38px">주요 트러블 2: 초록색 인식 불안정</h2>
+  <div class="grid g2 mt-l" style="gap:16px">
+    <div>
+      <div style="font-size:12px;color:#ff7b72;font-family:'JetBrains Mono',monospace;margin-bottom:8px">PROBLEM</div>
+      <div class="trouble-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">조명과 카메라 조건에 따라 green이 배경 또는 메인보드 색상과 혼동. green 블록 미검출 또는 오검출 발생.</p>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:8px">SOLUTION</div>
+      <div class="solution-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">green 전용 LAB threshold 확대. HSV fallback mask 추가. <span class="mono" style="font-size:12px">green_min_color_fraction</span> 별도 설정.</p>
+      </div>
+      <div class="choice-box mt-m">
+        <div style="color:#79c0ff;font-weight:600;font-size:13px">선택 이유</div>
+        <p style="margin:6px 0 0;font-size:13px;color:#8b949e;line-height:1.5">전체 threshold를 높이면 다른 색상 오검출 증가. green만 별도 보정하는 것이 부작용이 가장 작음.</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>43 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 44 · 트러블 3: 허공집기
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Trouble 3">
+  <p class="kicker">troubleshooting · 03 / 05</p>
+  <h2 class="h2" style="font-size:38px">주요 트러블 3: 블록 누락으로 인한 허공집기</h2>
+  <div class="grid g2 mt-l" style="gap:16px">
+    <div>
+      <div style="font-size:12px;color:#ff7b72;font-family:'JetBrains Mono',monospace;margin-bottom:8px">PROBLEM</div>
+      <div class="trouble-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">트레이에 블록이 없으면 그리퍼가 허공을 집음. 이후 place 단계에서 아무것도 없는 블록을 조립하려다 전체 sequence 실패.</p>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:8px">SOLUTION</div>
+      <div class="solution-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">pick 직전 웹캠 검사 실패 시 pause. 사용자가 블록 보충 후 resume하면 해당 task 재시도.</p>
+      </div>
+      <div class="choice-box mt-m">
+        <div style="color:#79c0ff;font-weight:600;font-size:13px">선택 이유</div>
+        <p style="margin:6px 0 0;font-size:13px;color:#8b949e;line-height:1.5">즉시 abort보다 데모 운영성이 좋음. 허공집기 이후 place 실패를 사전에 차단해 연쇄 실패 방지.</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>44 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 45 · 트러블 4: 조립 위치 미세 오차
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Trouble 4">
+  <p class="kicker">troubleshooting · 04 / 05</p>
+  <h2 class="h2" style="font-size:38px">주요 트러블 4: 조립 위치 미세 오차</h2>
+  <div class="grid g2 mt-l" style="gap:16px">
+    <div>
+      <div style="font-size:12px;color:#ff7b72;font-family:'JetBrains Mono',monospace;margin-bottom:8px">PROBLEM</div>
+      <div class="trouble-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">레고 체결은 작은 XY/Z 오차에도 실패 가능. 고정 Z 하강만으로는 체결 성공률이 낮음.</p>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:8px">SOLUTION</div>
+      <div class="solution-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">force compliance 하강 + spiral motion 보조 + stack index 기반 Z 높이 계산.</p>
+      </div>
+      <div class="choice-box mt-m">
+        <div style="color:#79c0ff;font-weight:600;font-size:13px">선택 이유</div>
+        <p style="margin:6px 0 0;font-size:13px;color:#8b949e;line-height:1.5">비전으로 모든 미세 오차를 보정하는 것보다 구현 시간이 짧음. 실제 하드웨어에서 체결 성공률 향상에 직접적 효과.</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>45 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 46 · 트러블 5: 비전 신뢰 불가
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Trouble 5">
+  <p class="kicker">troubleshooting · 05 / 05</p>
+  <h2 class="h2" style="font-size:38px">주요 트러블 5: 비전 결과 100% 신뢰 불가</h2>
+  <div class="grid g2 mt-l" style="gap:16px">
+    <div>
+      <div style="font-size:12px;color:#ff7b72;font-family:'JetBrains Mono',monospace;margin-bottom:8px">PROBLEM</div>
+      <div class="trouble-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">업로드 이미지의 조명, 배경, 그림 품질이 다양함. 완전 자동 인식만 고집하면 데모 실패 가능성 증가.</p>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:8px">SOLUTION</div>
+      <div class="solution-box">
+        <p style="margin:0;font-size:14px;line-height:1.7;color:#e6edf3">ROI 선택 + 색상 격자 수동 수정 + 블록 분할 미리보기 제공. Human-in-the-loop 방식.</p>
+      </div>
+      <div class="choice-box mt-m">
+        <div style="color:#79c0ff;font-weight:600;font-size:13px">선택 이유</div>
+        <p style="margin:6px 0 0;font-size:13px;color:#8b949e;line-height:1.5">완전 자동화보다 실용적 안정성 확보. 발표 데모에서 비전 오류를 즉석에서 보정 가능.</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>46 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 47 · 프로젝트 차별점
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Differentiators">
+  <p class="kicker">project · differentiators</p>
+  <h2 class="h2">프로젝트 차별점</h2>
+  <div class="grid g2 mt-l" style="gap:12px">
+    <div class="list-item"><span class="list-icon" style="font-size:18px">🔗</span><span><strong>이미지 설계부터 조립까지 연결</strong> — 단순 Pick &amp; Place가 아닌 end-to-end 자동화</span></div>
+    <div class="list-item"><span class="list-icon" style="font-size:18px">🧩</span><span><strong>물리 블록 단위 변환</strong> — 색상 격자를 실제 2칸/3칸 블록으로 정확히 매핑</span></div>
+    <div class="list-item"><span class="list-icon" style="font-size:18px">🔢</span><span><strong>Beam Search 구조 안정성</strong> — Greedy보다 안정적인 조립 순서 생성</span></div>
+    <div class="list-item"><span class="list-icon" style="font-size:18px">📷</span><span><strong>웹캠 사전 검사</strong> — 집기 전 실패 예방으로 연쇄 오류 방지</span></div>
+    <div class="list-item"><span class="list-icon" style="font-size:18px">🔍</span><span><strong>전면 카메라 검증</strong> — 조립 후 각 step 결과 확인</span></div>
+    <div class="list-item"><span class="list-icon" style="font-size:18px">⚠️</span><span><strong>외력 감지 안전성</strong> — 100Hz 모니터링으로 충돌 즉각 감지</span></div>
+    <div class="list-item"><span class="list-icon" style="font-size:18px">♻️</span><span><strong>자동 해체/폐기</strong> — 반복 가능한 완전 자동화 데모 시스템</span></div>
+    <div class="list-item"><span class="list-icon" style="font-size:18px">🖥️</span><span><strong>Web UI + Qt UI 동시 지원</strong> — 다양한 환경에서 동일한 제어 경험</span></div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>47 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 48 · 한계 및 개선 방향
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Limits & Future">
+  <p class="kicker">reflection · future-work</p>
+  <h2 class="h2">한계 및 개선 방향</h2>
+  <div class="grid g2 mt-l" style="gap:16px;align-items:start">
+    <div>
+      <h4 class="h4" style="font-size:14px;color:#ff7b72;margin-bottom:10px">현재 한계</h4>
+      <div class="trouble-box" style="margin-bottom:8px"><span style="font-size:13px">카메라 ROI와 threshold가 실측값에 의존</span></div>
+      <div class="trouble-box" style="margin-bottom:8px"><span style="font-size:13px">웹캠 위치 변경 시 ROI/Hough 파라미터 재튜닝 필요</span></div>
+      <div class="trouble-box" style="margin-bottom:8px"><span style="font-size:13px">전면 검증은 4점 homography 기반 — 위치 변경 시 재설정</span></div>
+      <div class="trouble-box"><span style="font-size:13px">step 기반 자동 복구 queue 미구현</span></div>
+    </div>
+    <div>
+      <h4 class="h4" style="font-size:14px;color:#7ee787;margin-bottom:10px">개선 방향</h4>
+      <div class="solution-box" style="margin-bottom:8px"><span style="font-size:13px">카메라 캘리브레이션 UI 추가</span></div>
+      <div class="solution-box" style="margin-bottom:8px"><span style="font-size:13px">ROI 자동 저장/로드</span></div>
+      <div class="solution-box" style="margin-bottom:8px"><span style="font-size:13px">실패 step 기반 재조립 queue</span></div>
+      <div class="solution-box" style="margin-bottom:8px"><span style="font-size:13px">블록 인식 모델 고도화 (딥러닝)</span></div>
+      <div class="solution-box"><span style="font-size:13px">fail-close 안전 옵션 추가</span></div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>48 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 49 · 성과 정리
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Achievements">
+  <p class="kicker">results · achievements</p>
+  <h2 class="h2">성과 정리</h2>
+  <div class="grid g2 mt-l" style="gap:14px">
+    <div class="card card-accent" style="padding:18px 20px">
+      <div style="font-size:24px;margin-bottom:8px">🏗️</div>
+      <h4 class="h4" style="font-size:14px;color:#7ee787">ROS2 전체 파이프라인 구축</h4>
+      <p class="dim" style="font-size:13px;margin:6px 0 0;line-height:1.5">이미지 → 블록 계획 → 로봇 실행까지 end-to-end 구현</p>
+    </div>
+    <div class="card card-blue" style="padding:18px 20px">
+      <div style="font-size:24px;margin-bottom:8px">🤖</div>
+      <h4 class="h4" style="font-size:14px;color:#79c0ff">실제 로봇 좌표계 연결</h4>
+      <p class="dim" style="font-size:13px;margin:6px 0 0;line-height:1.5">비전 결과와 로봇 좌표계를 실측 기반으로 정밀 연결</p>
+    </div>
+    <div class="card card-purple" style="padding:18px 20px">
+      <div style="font-size:24px;margin-bottom:8px">🛡️</div>
+      <h4 class="h4" style="font-size:14px;color:#d2a8ff">다중화된 안전 검증</h4>
+      <p class="dim" style="font-size:13px;margin:6px 0 0;line-height:1.5">웹캠 검사 + 전면 검증 + 외력 감지로 3중 안전망</p>
+    </div>
+    <div class="card card-red" style="padding:18px 20px">
+      <div style="font-size:24px;margin-bottom:8px">💡</div>
+      <h4 class="h4" style="font-size:14px;color:#ff7b72">구조적 예외 처리 경험</h4>
+      <p class="dim" style="font-size:13px;margin:6px 0 0;line-height:1.5">ROS2 통합, 실제 오차 처리, 전통 비전과 UI 보정의 실용적 조합</p>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>49 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 50 · 마무리
+══════════════════════════════════════════════════════ -->
+<section class="slide" data-title="Closing">
+  <p class="kicker">closing · summary</p>
+  <div style="max-width:800px">
+    <h1 class="h1" style="font-size:44px;line-height:1.2;margin-bottom:24px">
+      이미지 기반 설계도를 실제 로봇 조립 동작으로 변환하고,<br>
+      <span class="gradient-text">실행 중 발생 가능한 실패를 비전·외력·UI 제어로 보완한<br>폐루프 자동화 시스템</span>
+    </h1>
+  </div>
+  <div class="grid g3 mt-l" style="gap:12px;max-width:820px">
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:11px;color:#7ee787;font-family:'JetBrains Mono',monospace;margin-bottom:6px">배운 점 1</div>
+      <div style="font-size:13px;color:#e6edf3;line-height:1.5">ROS2 통합 설계 — 노드 분리와 인터페이스 설계의 중요성</div>
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:11px;color:#79c0ff;font-family:'JetBrains Mono',monospace;margin-bottom:6px">배운 점 2</div>
+      <div style="font-size:13px;color:#e6edf3;line-height:1.5">로봇 제어와 비전의 실제 오차 처리 경험</div>
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:11px;color:#d2a8ff;font-family:'JetBrains Mono',monospace;margin-bottom:6px">배운 점 3</div>
+      <div style="font-size:13px;color:#e6edf3;line-height:1.5">데모 안정성을 위한 Human-in-the-loop 설계</div>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>50 / 51</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 51 · Q&A
+══════════════════════════════════════════════════════ -->
+<section class="slide section-cover" data-title="Q&A">
+  <div style="text-align:center;position:relative;z-index:1">
+    <div class="gradient-text" style="font-size:100px;font-weight:900;line-height:1;font-family:'JetBrains Mono',monospace;opacity:.15;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">Q&amp;A</div>
+    <p class="kicker" style="margin-bottom:16px">questions · answers</p>
+    <h1 class="h1 gradient-text" style="font-size:72px;margin-bottom:16px">Q &amp; A</h1>
+    <p class="lede" style="max-width:500px;margin:0 auto;text-align:center">궁금하신 점이 있으시면 편하게 질문해 주세요</p>
+    <div style="margin-top:36px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+      <span class="tag" style="font-size:13px;padding:6px 14px">ROS2 Humble</span>
+      <span class="tag" style="font-size:13px;padding:6px 14px">Doosan M0609</span>
+      <span class="tag" style="font-size:13px;padding:6px 14px">OnRobot RG2</span>
+      <span class="tag" style="font-size:13px;padding:6px 14px">OpenCV</span>
+      <span class="tag" style="font-size:13px;padding:6px 14px">Flask + SocketIO</span>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="mono">lego-robot-auto-assembly</span><span>51 / 51</span></div>
+</section>
+
+</div><!-- /deck -->
+<script src="../../../.claude/skills/html-ppt/assets/runtime.js"></script>
+</body>
+</html>

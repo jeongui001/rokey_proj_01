@@ -3,7 +3,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-WEBCAM_DEVICE = '/dev/video2'
+WEBCAM_DEVICE = '/dev/video0'
 
 
 def generate_launch_description():
@@ -56,7 +56,7 @@ def generate_launch_description():
             parameters=[{
                 'robot_ip': '192.168.1.100',
                 'robot_port': 12345,
-                'torque_threshold_nm': 18.0,
+                'torque_threshold_nm': 15.0,
                 'poll_hz': 100.0,
             }],
         ),
