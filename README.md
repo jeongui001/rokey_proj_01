@@ -317,5 +317,14 @@ ros2 run rqt_image_view rqt_image_view
 [터미널 4] python3 src/qt_app/main.py
 [터미널 5] ros2 run rqt_image_view rqt_image_view          # 선택
 ```
+---
+
 ### 영상
 https://youtu.be/rr9P0iLsZmI
+
+---
+## License
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+이 프로젝트는 MIT 라이선스에 따라 라이선스가 부여됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
