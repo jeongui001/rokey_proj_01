@@ -317,3 +317,5 @@ ros2 run rqt_image_view rqt_image_view
 [터미널 4] python3 src/qt_app/main.py
 [터미널 5] ros2 run rqt_image_view rqt_image_view          # 선택
 ```
+### 영상
+https://youtu.be/rr9P0iLsZmI
